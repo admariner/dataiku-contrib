@@ -19,21 +19,18 @@ config = get_recipe_config()
 
 text_column = config['text_column']
 sg = config.get('sg')
-if sg == 'cbow' :
-	sg = 0 
-else :
-	sg = 1	
+sg = 0 if sg == 'cbow' else 1
 size = int(config['size'])
 iterations = int(config['iter'])
 workers = int(config['workers'])
-min_count = int(config['min_count'])    
-max_vocab_size = int(config.get('max_vocab_size', None))    
-window = int(config['window'])                
+min_count = int(config['min_count'])
+max_vocab_size = int(config.get('max_vocab_size', None))
+window = int(config['window'])
 sample = config['sample']
-negative = int(config['negative'])             
-hs = int(config.get('hs', 0)) 
+negative = int(config['negative'])
+hs = int(config.get('hs', 0))
 alpha = config['alpha']
-cbow_mean = int(config.get('cbow_mean',0)) 
+cbow_mean = int(config.get('cbow_mean',0))
 seed = int(config['seed'])             
 
 modelname = "word2vec_model"

@@ -32,12 +32,12 @@ tt.start()
 
 @app.route('/tensorboard-endpoint')
 def tensorboard_endpoint():
-    url = "http://localhost:{}/".format(port)
+    url = f"http://localhost:{port}/"
     return resp_from_url(url)
 
 @app.route('/data/<path:url>')
 def proxy(url):
-    redirect_url = "http://localhost:{}/data/{}".format(port, url)
+    redirect_url = f"http://localhost:{port}/data/{url}"
     response = requests.get(redirect_url, stream=True, params=request.args)
     return resp_from_url(redirect_url)
 

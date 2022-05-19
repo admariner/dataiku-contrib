@@ -1,5 +1,5 @@
 def jsonify(data):
-    json_data = dict()
+    json_data = {}
     for key, value in data.items():
         if isinstance(value, list): # for lists
             value = [ jsonify(item) if isinstance(item, dict) else item for item in value ]

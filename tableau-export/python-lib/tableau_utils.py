@@ -71,7 +71,7 @@ def insertData(dataset_in, table_out):
 def output_filename():
     result = get_recipe_config().get("tde_file_name", "output.tde")
     if not result.endswith('.tde'):
-        result = result + '.tde'
+        result = f'{result}.tde'
     return result
 
 def tde_export():

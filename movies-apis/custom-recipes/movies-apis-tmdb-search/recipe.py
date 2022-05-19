@@ -25,7 +25,7 @@ for row in input_dataset.iter_rows(log_every=10):
             response = tmdb.Search().movie(query=title)["results"]
             time.sleep(0.05)
         except requests.exceptions.HTTPError as e:
-            logger.info('Error: {}'.format(e))
+            logger.info(f'Error: {e}')
             results_notFound.append({'title_queried': title, 'error': e})
             continue
         if len(response) == 0:
@@ -42,7 +42,7 @@ for row in input_dataset.iter_rows(log_every=10):
         try:
             movie = tmdb.Movies(id_tmdb).info()
         except requests.exceptions.HTTPError as e:
-            logger.info('Error after getting id ' + str(id_tmdb) + ': ' + e)
+            logger.info(f'Error after getting id {str(id_tmdb)}: ' + e)
             results_notFound.append({'': title, 'error': '(on id '+id_tmdb+')' + e})
             continue
         movie['title_queried'] = title

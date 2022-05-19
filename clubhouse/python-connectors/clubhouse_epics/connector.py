@@ -16,7 +16,7 @@ class EpicsConnector(Connector):
         logging.info("Clubhouse: fetching epics")
         headers = {"Content-Type": "application/json"}
 
-        r = requests.get(self.endpoint + "/epics?token=" + self.key, headers=headers)
+        r = requests.get(f"{self.endpoint}/epics?token={self.key}", headers=headers)
         r.raise_for_status()
         try:
             return json.loads(r.content)
@@ -36,20 +36,17 @@ class EpicsConnector(Connector):
         if len(rows) == 0:
             logging.info("Not epics.")
         else:
-            nb = 0
-            for row in rows:
+            for nb, row in enumerate(rows):
                 if 0 <= records_limit <= nb:
                     logging.info("Reached records_limit (%i), stopping." % records_limit)
                     return
-                
-                encoded_row = {}
-                encoded_row["query_date"] = query_date
+
+                encoded_row = {"query_date": query_date}
                 for key in row:
                     val = row[key]
                     if isinstance(val, unicode):
                         val = unicodedata.normalize('NFKD', val).encode('ascii','ignore')                                             
                     encoded_row[str(key)] = val
-                    
+
                 yield encoded_row
-                nb += 1
 

@@ -26,16 +26,14 @@ class ImportIOConnector(Connector):
             raise
 
     def get_read_schema(self):
-        if self.api_version == 'api':
-            columns = importio_utils.convert_schema(self.json['outputProperties'])
-            return {"columns":columns}
-        else:
-             return None
+        if self.api_version != 'api':
+            return None
+        columns = importio_utils.convert_schema(self.json['outputProperties'])
+        return {"columns":columns}
 
     def generate_rows(self, dataset_schema=None, dataset_partitioning=None, partition_id=None, records_limit = -1):
         if self.api_version == 'api':
-            for row in self.json['results']:
-                yield row
+            yield from self.json['results']
         else:
             df = pd.DataFrame(self.json['extractorData']['data'][0]['group'])
             for col in df.columns:
@@ -43,10 +41,9 @@ class ImportIOConnector(Connector):
                 if lengths.max() == 1:
                     df[col] = df[col].apply(lambda x: x[0] if type(x) == list else {})
                     keys = df[col].apply(lambda x: x.keys())
-                    for key in set([key for line in keys for key in line]): # drop duplicates
+                    for key in {key for line in keys for key in line}: # drop duplicates
                         df[col + '_' + key] = df[col].apply(lambda x: x.get(key,''))
                     del df[col]
                 else:
                     df[col] = df[col].apply(json.dumps)
-            for row in df.to_dict(orient='records'):
-                yield row
+            yield from df.to_dict(orient='records')

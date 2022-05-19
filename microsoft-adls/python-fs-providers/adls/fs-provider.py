@@ -25,10 +25,7 @@ class ADLSFSProvider(FSProvider):
         
     def get_adls_lnt_path(self, path):
         lnt_path = self.get_lnt_path(path)
-        if lnt_path == '/':
-            return self.root_lnt
-        else:
-            return self.root_lnt + lnt_path
+        return self.root_lnt if lnt_path == '/' else self.root_lnt + lnt_path
         
     def get_lnt_path(self, path):
         if len(path) == 0 or path == '/':
@@ -51,32 +48,31 @@ class ADLSFSProvider(FSProvider):
                 'size' : path_info['blockSize'], 
                 'lastModified':path_info['modificationTime']
             }
-        else:
-            children = []
-            for child in self.adls_client.listdir(adls_path):
-                child_info = self.adls_client.info(child)
-                child_sub_path = self.get_lnt_path(child)[len(self.root_lnt):]
-                if child_info['type'] == 'DIRECTORY':
-                    children.append({
-                        'fullPath' : child_sub_path, 
-                        'exists' : True, 
-                        'directory' : True, 
-                        'size' : 0
-                    })
-                else:
-                    children.append({
-                        'fullPath' : child_sub_path, 
-                        'exists' : True, 
-                        'directory' : False, 
-                        'size' : child_info['blockSize'], 
-                        'lastModified':child_info['modificationTime']
-                    })
-            return {
-                'fullPath': path_lnt, 
-                'exists' : True, 
-                'directory' : True, 
-                'children' : children
-            }
+        children = []
+        for child in self.adls_client.listdir(adls_path):
+            child_info = self.adls_client.info(child)
+            child_sub_path = self.get_lnt_path(child)[len(self.root_lnt):]
+            if child_info['type'] == 'DIRECTORY':
+                children.append({
+                    'fullPath' : child_sub_path, 
+                    'exists' : True, 
+                    'directory' : True, 
+                    'size' : 0
+                })
+            else:
+                children.append({
+                    'fullPath' : child_sub_path, 
+                    'exists' : True, 
+                    'directory' : False, 
+                    'size' : child_info['blockSize'], 
+                    'lastModified':child_info['modificationTime']
+                })
+        return {
+            'fullPath': path_lnt, 
+            'exists' : True, 
+            'directory' : True, 
+            'children' : children
+        }
         
     def enumerate(self, path, first_non_empty):
         adls_path = self.get_adls_lnt_path(path)
@@ -90,17 +86,16 @@ class ADLSFSProvider(FSProvider):
                 'size' : path_info['blockSize'], 
                 'lastModified' : path_info['modificationTime']
             }]
-        else:
-            paths = []
-            for child in self.adls_client.walk(adls_path):
-                child_info = self.adls_client.info(child)
-                child_sub_path = self.get_lnt_path(child)[len(self.root_lnt):]
-                if self.adls_client.info(child)['type'] == 'FILE':
-                    paths.append({
-                        'path' : child_sub_path, 
-                        'size' : child_info['blockSize'], 
-                        'lastModified' : child_info['modificationTime']})
-            return paths        
+        paths = []
+        for child in self.adls_client.walk(adls_path):
+            child_info = self.adls_client.info(child)
+            child_sub_path = self.get_lnt_path(child)[len(self.root_lnt):]
+            if self.adls_client.info(child)['type'] == 'FILE':
+                paths.append({
+                    'path' : child_sub_path, 
+                    'size' : child_info['blockSize'], 
+                    'lastModified' : child_info['modificationTime']})
+        return paths        
         
     def stat(self, path):
         adls_path = self.get_adls_lnt_path(path)
@@ -126,7 +121,7 @@ class ADLSFSProvider(FSProvider):
     def read(self, path, stream, limit):
         adls_path = self.get_adls_lnt_path(path)
         if not self.adls_client.exists(adls_path):
-            raise Exception('Path doesn t exist : %s' % adls_path)
+            raise Exception(f'Path doesn t exist : {adls_path}')
         with self.adls_client.open(adls_path, 'rb') as f:
             shutil.copyfileobj(f, stream)
 

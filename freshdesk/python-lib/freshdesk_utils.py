@@ -6,9 +6,9 @@ class FreshdeskConnector():
         self.key = plugin_config["api_key"]
 
     def fetch_page(self, page):
-        logging.info("Freshdesk: fetching page %s" % page)
-        base64string = base64.encodestring('%s:%s' % (self.key, "X")).replace('\n','')
-        auth = "Basic %s" % base64string
+        logging.info(f"Freshdesk: fetching page {page}")
+        base64string = base64.encodestring(f'{self.key}:X').replace('\n', '')
+        auth = f"Basic {base64string}"
         headers = {'Authorization': auth}
 
         r = requests.get(self.endpoint + self.path+str(page), headers = headers)
@@ -51,7 +51,7 @@ class FreshdeskConnector():
                     # Flatten the custom fields
                     if "custom_field" in row:
                         for (k, v) in row["custom_field"].items():
-                            row["custom_field_%s" %k ] = v
+                            row[f"custom_field_{k}"] = v
                         del row["custom_field"]
 
                     yield {k: json.dumps(v) if type(v) in [list,dict] else v for k,v in row.items()}

@@ -56,9 +56,7 @@ ws.append_rows = append_rows.__get__(ws, ws.__class__)
 
 # Handle datetimes serialization
 def serializer(obj):
-    if isinstance(obj, datetime.datetime):
-        return obj.isoformat()
-    return obj
+    return obj.isoformat() if isinstance(obj, datetime.datetime) else obj
 
 
 # Open writer

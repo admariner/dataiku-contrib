@@ -58,10 +58,12 @@ def make_api_call_all_pages(conf, action, params = {}):
     while looping:
         params.update({'start':start})
         json = make_api_call(conf, action, params)
-        for r in json.get('data'):
-            results.append(r)
-        is_more = json.get('additional_data').get('pagination').get('more_items_in_collection')
-        if is_more:
+        results.extend(iter(json.get('data')))
+        if (
+            is_more := json.get('additional_data')
+            .get('pagination')
+            .get('more_items_in_collection')
+        ):
             start = json.get('additional_data').get('pagination').get('next_start')
         else:
             looping = False
@@ -107,7 +109,7 @@ def get_unique_slug(string):
     i = 1
     while test_string in list_unique_slugs:
         i += 1
-        test_string = string + '_' + str(i)
+        test_string = f'{string}_{i}'
     list_unique_slugs.append(test_string)
     return test_string
 

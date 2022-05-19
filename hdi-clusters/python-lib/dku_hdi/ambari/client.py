@@ -42,11 +42,14 @@ class HdiAmbariClient(object):
     def get_config(self, cluster_name, config_name='core-site'):
         url_meta = self.host + '/api/v1/clusters/{cluster_name}/configurations?type={config_name}&tag={config_tag}'
         if config_name not in self.configs_tags.keys():
-            raise ValueError('Configuration requested {} does not exist in cluster'.format(config_name))
-        
+            raise ValueError(
+                f'Configuration requested {config_name} does not exist in cluster'
+            )
+
+
         config_tag = self.configs_tags[config_name]['tag']
         url = url_meta.format(cluster_name=cluster_name, config_name=config_name, config_tag=config_tag)
-        
+
         resp = self.session.get(url, **self.request_params)
         return resp.json()['items'][0]['properties']
     

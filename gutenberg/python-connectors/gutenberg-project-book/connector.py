@@ -51,11 +51,11 @@ class GutenbergConnector(Connector):
         stopit = 0
         for i in range(lid-1):
             if (fullbid[i+1] != "-") and (stopit==0):
-                url_book += '/'+fullbid[i]
+                url_book += f'/{fullbid[i]}'
             else:
                 stopit=1
-                rootbid=fullbid[0:i]
-        url_book += '/'+ rootbid  + '/'+ fullbid + '-0.txt'
+                rootbid = fullbid[:i]
+        url_book += f'/{rootbid}/{fullbid}-0.txt'
 
         response = urlopen(url_book)
         raw = response.read()   #.decode('utf8')
@@ -70,7 +70,7 @@ class GutenbergConnector(Connector):
         date = [ i.split(':')[1].strip() for i in preamb.split("\r\n\r\n") if i.find('Release Date') != -1][0]
         book_paraph =  raw[start_book:end_book].split("\r\n\r\n")
 
-        logger.info("Book length %s" % len(raw))
+        logger.info(f"Book length {len(raw)}")
         logger.info("N paragraphs:", len(book_paraph))
 
         for id_p, p in enumerate(book_paraph):

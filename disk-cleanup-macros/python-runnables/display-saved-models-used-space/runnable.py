@@ -26,7 +26,7 @@ class MyRunnable(Runnable):
         rt.add_column("versions", "Number of versions", "STRING")
 
         if self.config.get('allProjects', False):
-            projects = [project_key for project_key in os.listdir(saved_models)]
+            projects = list(os.listdir(saved_models))
         else:
             projects = [self.project_key]
 
@@ -54,13 +54,15 @@ class MyRunnable(Runnable):
                         total_splits += cleanup.du(split_dir)
                     versions += 1
 
-                record = []
-                record.append(project)
-                record.append(saved_model)
-                record.append(saved_model)
-                record.append(total / 1024)
-                record.append(total_splits / 1024)
-                record.append(versions)
+                record = [
+                    project,
+                    saved_model,
+                    saved_model,
+                    total / 1024,
+                    total_splits / 1024,
+                    versions,
+                ]
+
                 rt.add_record(record)
 
         return rt

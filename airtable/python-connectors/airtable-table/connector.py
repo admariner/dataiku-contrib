@@ -35,14 +35,14 @@ class MyConnector(Connector):
 
         while looping:
             if offset != None:
-                params.update({'offset':offset})
+                params['offset'] = offset
             results = airtable_api(self.base, self.table, self.key, parameters=params)
             for record in results.get("records"):
                 if self.retrieve_id == 'yes':
                     record["fields"]["id"] = record["id"]
                 yield record["fields"]
             offset = results.get("offset")
-            looping = False if offset is None else True
+            looping = offset is not None
 
 
     def get_writer(self, dataset_schema=None, dataset_partitioning=None,

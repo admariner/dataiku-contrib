@@ -36,30 +36,30 @@ def get_token_from_login_password(P_USERNAME,P_PASSWORD,P_TOKEN_EXPIRATION):
     return token,tokenExpiresReadable
 
 def get_coverage_dict(P_COUNTRY_MODE):
-  # Build the dictionary of dicts
-  dict_esri_coverage = dataiku_esri_content_utils.get_esri_coverage()
-  dict_esri_coverage_structure = dict()
+    # Build the dictionary of dicts
+    dict_esri_coverage = dataiku_esri_content_utils.get_esri_coverage()
+    dict_esri_coverage_structure = {}
 
-  for i in range(0, len(dict_esri_coverage['country'])):
-      co = dict_esri_coverage['country'][i]
-      i3 = dict_esri_coverage[u'isocode3'][i]
-      i2 = dict_esri_coverage[u'isocode2'][i]
+    for i in range(len(dict_esri_coverage['country'])):
+        co = dict_esri_coverage['country'][i]
+        i3 = dict_esri_coverage[u'isocode3'][i]
+        i2 = dict_esri_coverage[u'isocode2'][i]
 
-      structure = {u'attributes':
-                       {u'isocode3': i3
-                        ,u'isocode2': i2
-                        ,u'country': co
-                        ,u'comment': dict_esri_coverage[u'comment'][i]
-                        ,u'content_as_of': dict_esri_coverage[u'esri_content_as_of'][i]
-                        ,u'datacollections': {
-                            u'generic_datacollections': dict_esri_coverage[u'generic_datacollections'][i]
-                        }}}
+        structure = {u'attributes':
+                         {u'isocode3': i3
+                          ,u'isocode2': i2
+                          ,u'country': co
+                          ,u'comment': dict_esri_coverage[u'comment'][i]
+                          ,u'content_as_of': dict_esri_coverage[u'esri_content_as_of'][i]
+                          ,u'datacollections': {
+                              u'generic_datacollections': dict_esri_coverage[u'generic_datacollections'][i]
+                          }}}
 
-      if P_COUNTRY_MODE =='full_name':
-          dict_esri_coverage_structure[co]=structure
-      elif P_COUNTRY_MODE =='isocode3':
-          dict_esri_coverage_structure[i3]=structure
-      elif P_COUNTRY_MODE =='isocode2':
-          dict_esri_coverage_structure[i2]=structure
+        if P_COUNTRY_MODE == 'full_name':
+            dict_esri_coverage_structure[co]=structure
+        elif P_COUNTRY_MODE == 'isocode2':
+            dict_esri_coverage_structure[i2]=structure
 
-  return dict_esri_coverage_structure
+        elif P_COUNTRY_MODE == 'isocode3':
+            dict_esri_coverage_structure[i3]=structure
+    return dict_esri_coverage_structure

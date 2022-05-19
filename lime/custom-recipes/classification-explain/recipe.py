@@ -12,11 +12,11 @@ params = get_recipe_config()
 MAX_SAMPLES = int(params.get('num_samples'))
 if MAX_SAMPLES < 0:
     MAX_SAMPLES = -1
-    
+
 NH_SIZE = int(params.get('nh_size'))
 if NH_SIZE <= 0:
     raise ValueError('Number of perturbations must be a postive integer')
-    
+
 KERNEL_WIDTH = float(params.get('kernel_width'))
 RIDGE_ALPHA = float(params.get('alpha_ridge', 1.0))
 
@@ -34,7 +34,7 @@ if len(test_ds_config):
     test_ds = dataiku.Dataset(test_ds_path) 
 else:
     test_ds = train_ds
-    
+
 test_df = test_ds.get_dataframe()
 explanations_ds_path = get_output_names_for_role('explanations')[0]
 explanations_ds = dataiku.Dataset(explanations_ds_path)
@@ -43,11 +43,7 @@ samples_ds = dataiku.Dataset(samples_ds_path)
 
 limexp = LimeExplainer(train_df, model, kernel_width=KERNEL_WIDTH, ridge_alpha=RIDGE_ALPHA)
 
-if MAX_SAMPLES < 0:
-    to_explain = test_df
-else:
-    to_explain = test_df.head(MAX_SAMPLES)
-
+to_explain = test_df if MAX_SAMPLES < 0 else test_df.head(MAX_SAMPLES)
 explanations_writer = explanations_ds.get_writer()
 samples_writer = samples_ds.get_writer()
 
@@ -55,7 +51,7 @@ for idx, (exp_df, instance_df) in enumerate(limexp.iter_explain(test_df, NH_SIZE
     if idx == 0:
         explanations_ds.write_schema_from_dataframe(exp_df, True)
         samples_ds.write_schema_from_dataframe(instance_df, True)
-    
+
     explanations_writer.write_dataframe(exp_df)
     samples_writer.write_dataframe(instance_df)
 

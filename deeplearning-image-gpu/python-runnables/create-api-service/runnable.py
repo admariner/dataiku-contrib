@@ -37,9 +37,7 @@ class MyRunnable(Runnable):
         params = get_params(self.config, self.client, self.project)
         copy_plugin_to_dss_folder(self.plugin_id, params.get("model_folder_id"), self.project_key)
         create_api_code_env(self.client, params.get('code_env_name'))
-        api_service = get_api_service(params, self.project)            
+        api_service = get_api_service(params, self.project)
         endpoint_settings = get_model_endpoint_settings(params)
-        create_python_endpoint(api_service, endpoint_settings) 
-        html_str = get_html_result(params)
-        
-        return html_str
+        create_python_endpoint(api_service, endpoint_settings)
+        return get_html_result(params)

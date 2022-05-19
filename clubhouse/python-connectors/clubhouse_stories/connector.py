@@ -36,7 +36,7 @@ class StoriesConnector(Connector):
 
     def list_stories(self, projectId):
         logging.info("Clubhouse: fetching stories for project %i" % projectId)
-        return self.execute_query("projects/" + str(projectId) + "/stories")
+        return self.execute_query(f"projects/{str(projectId)}/stories")
 
     def execute_query(self, query):
         headers = {"Content-Type": "application/json"}

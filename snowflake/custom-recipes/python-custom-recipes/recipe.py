@@ -40,7 +40,7 @@ if not AWS_ACCESS_KEY or not AWS_SECRET_KEY:
             print("[-] Snowflake key found in Global Variables but can not retrieve aws_access_key and/or aws_secret_key.")
             print("[-] Please check and correct your Global Variables.")
             sys.exit("Global Variables error")
-    
+
 
 # Dataiku Datasets
 ds = dataiku.Dataset(DATASET_IN)
@@ -55,7 +55,10 @@ out = dataiku.Dataset(DATASET_OUT)
 config = ds.get_config()
 
 if config["formatType"] != 'csv':
-    print("[-] Only a CSV format for the input DSS Dataset is supported (you used {}).".format(config["formatType"]))
+    print(
+        f'[-] Only a CSV format for the input DSS Dataset is supported (you used {config["formatType"]}).'
+    )
+
     print("[-] Please adjust the format. Aborting")
     sys.exit("Format error (CSV needed)")
 
@@ -64,7 +67,7 @@ project_key = config["projectKey"]
 # Actual path of the input file on S3
 bucket = config["params"]["bucket"]
 path = config["params"]["path"].replace("${projectKey}",config["projectKey"])
-full_path = "s3://{}{}".format(bucket, path)
+full_path = f"s3://{bucket}{path}"
 
 # Input file definition
 separator = config["formatParams"]["separator"]
@@ -128,14 +131,14 @@ schema = []
 for column in ds.read_schema():
     _name = column["name"]
     _type = fieldSetterMap.get(column["type"], "VARCHAR")
-    s = "\"{}\" {}".format(_name, _type)
+    s = f'"{_name}" {_type}'
     schema.append(s)
-    
+
 schema_out = ", ".join(schema) 
 
 # Actual Snowflake bulkload
 print("[+] Create target table ...")
-q = """ CREATE OR REPLACE TABLE \"{}\" ({})""".format(output_table, schema_out)
+q = f""" CREATE OR REPLACE TABLE "{output_table}" ({schema_out})"""
 cur.execute(q)
 
 print("[+] Create a file format ...")

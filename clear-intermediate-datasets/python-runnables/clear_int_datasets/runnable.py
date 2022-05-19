@@ -36,9 +36,9 @@ class MyRunnable(Runnable):
         is_dry_run = self.config.get("is_dry_run")
         keep_partitioned = self.config.get("keep_partitioned")
         keep_shared = self.config.get("keep_shared")
-        logging.info("DRY RUN is set to {}".format(str(is_dry_run)))
-        logging.info("KEEP PARTITIONED is set to {}".format(str(keep_partitioned)))
-        logging.info("KEEP SHARED is set to {}".format(str(keep_shared)))
+        logging.info(f"DRY RUN is set to {str(is_dry_run)}")
+        logging.info(f"KEEP PARTITIONED is set to {str(keep_partitioned)}")
+        logging.info(f"KEEP SHARED is set to {str(keep_shared)}")
 
         # Initialize macro result table:
         result_table = ResultTable()
@@ -48,7 +48,7 @@ class MyRunnable(Runnable):
         result_table.add_column("action_status", "Action Status", "STRING")
 
         action_status = "Not done (Dry run)" if is_dry_run else "Done"
-        
+
         client = dataiku.api_client()
         if self.config.get("project_key", None):
             project = client.get_project(self.config.get("project_key"))
@@ -72,11 +72,9 @@ class MyRunnable(Runnable):
         # Identify Flow input/outputs:
         flow_inputs = [dataset for dataset in input_datasets if dataset not in output_datasets]
         flow_outputs = [dataset for dataset in output_datasets if dataset not in input_datasets]
-        logging.info("Found {} FLOW INPUT datasets: {}".format(str(len(flow_inputs)),
-                                                               str(flow_inputs)))
-        logging.info("Found {} FLOW OUTPUT datasets: {}".format(str(len(flow_outputs)),
-                                                                str(flow_outputs)))
-        
+        logging.info(f"Found {len(flow_inputs)} FLOW INPUT datasets: {flow_inputs}")
+        logging.info(f"Found {len(flow_outputs)} FLOW OUTPUT datasets: {flow_outputs}")
+
         # Identify standalone, intermediate, and partitioned datasets
         standalone_datasets = []
         intermediate_datasets = []
@@ -91,23 +89,31 @@ class MyRunnable(Runnable):
             if is_partitioned(dataset):
                 partitioned_datasets.append(dataset["name"])
 
-        logging.info("Found {} STANDALONE datasets: {}".format(str(len(standalone_datasets)),
-                                                                str(standalone_datasets)))
-        logging.info("Found {} INTERMEDIATE datasets: {}".format(str(len(intermediate_datasets)),
-                                                                str(intermediate_datasets)))       
-        logging.info("Found {} PARTITIONED datasets: {}".format(str(len(partitioned_datasets)),
-                                                                str(partitioned_datasets)))
+        logging.info(
+            f"Found {len(standalone_datasets)} STANDALONE datasets: {standalone_datasets}"
+        )
+
+        logging.info(
+            f"Found {len(intermediate_datasets)} INTERMEDIATE datasets: {intermediate_datasets}"
+        )
+
+        logging.info(
+            f"Found {len(partitioned_datasets)} PARTITIONED datasets: {partitioned_datasets}"
+        )
+
 
         # Identify shared datasets:
         shared_objects = project.get_settings().settings["exposedObjects"]["objects"]
         shared_datasets = [object["localName"] for object in shared_objects if object["type"]=="DATASET"]
-        logging.info("Found {} SHARED datasets: {}".format(str(len(shared_datasets)),
-                                                           str(shared_datasets)))
+        logging.info(
+            f"Found {len(shared_datasets)} SHARED datasets: {shared_datasets}"
+        )
+
 
 
         # Add dataset types to results list
         results = []
-        
+
         datasets = {"STANDALONE":standalone_datasets,
             "INPUT":flow_inputs,
             "OUTPUT":flow_outputs,
@@ -115,19 +121,16 @@ class MyRunnable(Runnable):
             "SHARED": shared_datasets,
             "PARTITIONED": partitioned_datasets
            }
-        
-        for dataset_type, dataset_type_list in datasets.items():
-            for dataset in dataset_type_list:
-                results.append([dataset, dataset_type])
 
+        for dataset_type, dataset_type_list in datasets.items():
+            results.extend([dataset, dataset_type] for dataset in dataset_type_list)
         # Identify which datasets should be kept
         to_keep = standalone_datasets + flow_inputs + flow_outputs
         if keep_partitioned:
             to_keep += partitioned_datasets
         if keep_shared:
             to_keep += shared_datasets
-        logging.info("Total of {} datasets to KEEP: {}".format(str(len(to_keep)),
-                                                               str(to_keep)))
+        logging.info(f"Total of {len(to_keep)} datasets to KEEP: {str(to_keep)}")
 
         # Create df with all results
         results_df = pd.DataFrame(results, columns=["Dataset", "Type"])
@@ -138,18 +141,17 @@ class MyRunnable(Runnable):
 
         # Perform cleanup
         to_clear = list(results_grouped["Dataset"][results_grouped['Action']=="CLEAR"])
-        logging.info("Total of {} datasets to CLEAR: {}".format(str(len(to_clear)),
-                                                               str(to_clear)))
+        logging.info(f"Total of {len(to_clear)} datasets to CLEAR: {to_clear}")
 
         if not is_dry_run:
             for ds in to_clear:
                 dataset = project.get_dataset(ds)
-                logging.info("Clearing {}...".format(ds))
+                logging.info(f"Clearing {ds}...")
                 dataset.clear()
-            logging.info("Clearing {} datasets: done.".format(str(len(to_clear))))
+            logging.info(f"Clearing {len(to_clear)} datasets: done.")
 
         # Pass results to result table
         for index, row in results_grouped.iterrows():
             result_table.add_record(list(row))
-        
+
         return result_table

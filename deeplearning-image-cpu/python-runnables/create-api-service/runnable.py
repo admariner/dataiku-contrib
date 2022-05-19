@@ -41,6 +41,4 @@ class MyRunnable(Runnable):
         api_service = get_api_service(params, self.project)
         endpoint_settings = get_model_endpoint_settings(params)
         create_python_endpoint(api_service, endpoint_settings)
-        html_str = get_html_result(params)
-
-        return html_str
+        return get_html_result(params)

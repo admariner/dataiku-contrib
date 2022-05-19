@@ -19,12 +19,7 @@ class InstagramConnector(Connector):
         print self.IS_LIST
 
     def get_read_schema(self):
-        schema = {
-            "columns": [
-                {'name':'record', 'type':'string'}
-            ]
-        }
-        return schema
+        return {"columns": [{'name': 'record', 'type': 'string'}]}
 
     def generate_rows(self, dataset_schema=None, dataset_partitioning=None,
                             partition_id=None, records_limit = -1):

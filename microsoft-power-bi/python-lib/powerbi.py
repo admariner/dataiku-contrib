@@ -27,23 +27,20 @@ class PowerBI(object):
     def __init__(self, token):
         self.token = token
         self.headers = {
-            'Authorization': 'Bearer ' + self.token,
-            'Content-Type': 'application/json'
+            'Authorization': f'Bearer {self.token}',
+            'Content-Type': 'application/json',
         }
         
     def get_datasets(self):
         endpoint = 'https://api.powerbi.com/v1.0/myorg/datasets'
-        response = requests.get(endpoint, headers=self.headers)
-        return response
+        return requests.get(endpoint, headers=self.headers)
     
     def get_dataset_by_name(self, name):
         data = self.get_datasets()
         datasets = data.json().get('value')
         o = []
         if datasets:
-            for dataset in datasets:
-                if dataset['name'] == name:
-                    o.append(dataset['id'])
+            o.extend(dataset['id'] for dataset in datasets if dataset['name'] == name)
         return o
     
     def delete_dataset(self, dsid):
@@ -107,9 +104,11 @@ class PowerBI(object):
         # Build the Power BI Dataset schema
         columns = []
         for column in schema["columns"]:
-            c = {}
-            c["name"] = column["name"]
-            c["dataType"] = fieldSetterMap.get(column["type"], "String")
+            c = {
+                "name": column["name"],
+                "dataType": fieldSetterMap.get(column["type"], "String"),
+            }
+
             columns.append(c)
         # Power BI dataset definition
         payload = {
@@ -185,8 +184,8 @@ def generate_access_token(username=None, password=None, client_id=None, client_s
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        print('HTTPError: ' + str(e) + ' response content:' + response.content)
+        print(f'HTTPError: {str(e)} response content:{response.content}')
         raise e
-        
+
     return response.json()
     

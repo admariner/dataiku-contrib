@@ -25,7 +25,7 @@ class MyConnector(Connector):
         i = 0
         while test_string in self.list_unique_slugs:
             i += 1
-            test_string = string + '_' + str(i)
+            test_string = f'{string}_{i}'
         self.list_unique_slugs.append(test_string)
         return test_string
 
@@ -118,9 +118,9 @@ class MyCustomDatasetWriter(CustomDatasetWriter):
 
         self.buffer = []
 
-        columns = [col["name"] for col in dataset_schema["columns"]]
-
         if parent.result_format == 'first-row-header':
+            columns = [col["name"] for col in dataset_schema["columns"]]
+
             self.buffer.append(columns)
 
 
@@ -144,13 +144,12 @@ class MyCustomDatasetWriter(CustomDatasetWriter):
 
         ws.resize(rows=num_lines, cols=num_columns)
 
-        range = 'A1:%s' % rowcol_to_a1(num_lines, num_columns)
+        range = f'A1:{rowcol_to_a1(num_lines, num_columns)}'
         ws.update(range, self.buffer, value_input_option=self.parent.write_format)
 
         self.buffer = []
 
     def close(self):
         self.flush()
-        pass
         
 

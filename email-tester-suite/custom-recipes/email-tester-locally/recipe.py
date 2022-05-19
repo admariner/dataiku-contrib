@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format='email-tester-locally plugin - %(
 
 # Plugin version
 PLUGIN_VERSION = '0.0.1'
-logging.info('version: %s' % PLUGIN_VERSION)
+logging.info(f'version: {PLUGIN_VERSION}')
 
 # Get handles on datasets
 contacts = dataiku.Dataset(get_input_names_for_role('contacts')[0])
@@ -35,8 +35,13 @@ if not email_column or not cache_folder:
 
 # Prepare schema
 output_schema = list(contacts.read_schema())
-output_schema.append({'name':'email_is_valid', 'type':'string'})
-output_schema.append({'name':'email_error', 'type':'string'})
+output_schema.extend(
+    (
+        {'name': 'email_is_valid', 'type': 'string'},
+        {'name': 'email_error', 'type': 'string'},
+    )
+)
+
 output.write_schema(output_schema)
 
 # Verification of the email column
@@ -56,8 +61,8 @@ filename = 'email-tester-locally-cache'
 cache_file = os.path.join(cache_folder, filename)
 cache = shelve.open(cache_file, writeback = True)
 cache_plugin_version = cache['plugin_version'] if 'plugin_version' in cache else None
-logging.info('cache file: %s' % cache_file)
-logging.debug('cache: %s' % str(cache))
+logging.info(f'cache file: {cache_file}')
+logging.debug(f'cache: {str(cache)}')
 
 # Function to compare version numbers
 def versiontuple(v):
@@ -112,7 +117,10 @@ def email_test_mx_record(email):
 
     # if cache, returns cache result
     if domain in cache["domains"].keys():
-        logging.debug("Domain already in cache: %s -> %s" % (domain, cache["domains"][domain]))
+        logging.debug(
+            f'Domain already in cache: {domain} -> {cache["domains"][domain]}'
+        )
+
         return cache["domains"][domain]
 
     try:
@@ -128,10 +136,8 @@ def email_test_mx_record(email):
 
 writer = output.get_writer()
 
-i = 0
-for contact in contacts.iter_rows():
+for i, contact in enumerate(contacts.iter_rows(), start=1):
 
-    i += 1
     contact = dict(contact)
     email = contact[email_column]
 
@@ -154,7 +160,7 @@ for contact in contacts.iter_rows():
     writer.write_row_dict(contact)
     logging.debug("%i: %s -> validity: %s (%s)" % (i, email, contact['email_is_valid'], contact['email_error']))
 
-logging.debug('cache: %s' % str(cache))
+logging.debug(f'cache: {str(cache)}')
 
 writer.close()
 cache.close()

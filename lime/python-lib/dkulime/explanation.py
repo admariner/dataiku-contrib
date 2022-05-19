@@ -46,7 +46,7 @@ class LimeExplainer(object):
     random_state = None
     ridge_alpha = None
     
-    def __init__(self, train_df, saved_model, kernel_width, ridge_alpha=float(1.0) , preprocessing_params=None, random_state=None):
+    def __init__(self, train_df, saved_model, kernel_width, ridge_alpha = 1.0, preprocessing_params=None, random_state=None):
         self.random_state = check_random_state(random_state)
         self.preprocessor = LimePreprocessor(saved_model)
         self.kernel = LimeKernel(kernel_width)
@@ -62,9 +62,9 @@ class LimeExplainer(object):
         sample_weights = self.compute_sample_weights_to_instance(Xe, Xs)
         classes = self.preprocessor.get_classes()
         predictor_features = self.preprocessor.get_predictor_features()
-        coefs_cols = ['coef_{}'.format(c) for c in classes]
+        coefs_cols = [f'coef_{c}' for c in classes]
         predictor_features_df = pd.DataFrame(predictor_features, columns=['feature'])
-        samples_cols = ['sample_{}'.format(s) for s in range(nh_size)]
+        samples_cols = [f'sample_{s}' for s in range(nh_size)]
 
         for row_idx, [to_exp, to_proba, w] in enumerate(izip(Xe, Ye, sample_weights)):
             Xs[0,:] = to_exp
@@ -105,6 +105,5 @@ class LimeExplainer(object):
 
     def compute_sample_weights_to_instance(self, to_explain_X, samples_X):
         distances = self.compute_distances_to_neighborhood(to_explain_X, samples_X)
-        weights = self.kernel.transform(distances)
-        return weights
+        return self.kernel.transform(distances)
     

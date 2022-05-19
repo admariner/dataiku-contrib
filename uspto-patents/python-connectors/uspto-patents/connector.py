@@ -2139,7 +2139,7 @@ def extract_xml_strings(filename):
 def iterNodes(node, parentDict):
     nodeDict = {}
     try:
-        nodeDict.update(node.attrib)
+        nodeDict |= node.attrib
     except AttributeError:
         pass
     if node.text != None:
@@ -2149,8 +2149,8 @@ def iterNodes(node, parentDict):
         childDict = {}
         newDict = {}
         newDict = iterNodes(i, childDict)
-        newList = []
         if i.tag in nodeDict:
+            newList = []
             try:
                 nodeDict[i.tag].append(newDict[i.tag])
             except:
@@ -2158,7 +2158,7 @@ def iterNodes(node, parentDict):
                 nodeDict[i.tag] = newList
                 nodeDict[i.tag].append(newDict[i.tag])
         else:
-            nodeDict.update(newDict)
+            nodeDict |= newDict
     tagList = node.tag.split(':')
     namespace = '$'.join(tagList)
     parentDict[namespace] = nodeDict
@@ -2304,7 +2304,4 @@ class USPTOConnector(Connector):
             }
 
     def list_partitions(self, dataset_partitioning):
-        if self.all_years:
-            return []
-        else:
-            return [str(x) for x in xrange(1976, 2016)]
+        return [] if self.all_years else [str(x) for x in xrange(1976, 2016)]

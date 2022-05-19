@@ -12,7 +12,7 @@ def log(*args):
     for thing in args:
         if type(thing) is dict:
             thing = json.dumps(thing)
-        print('Airtable plugin - %s' % thing)
+        print(f'Airtable plugin - {thing}')
 
 
 # Session object for requests
@@ -32,16 +32,17 @@ def airtable_api(base, table, token, action = '', parameters = {}, method = 'get
     headers = {
         'Content-type': 'application/json',
         'Accept-Encoding': 'gzip',
-        'Authorization': 'Bearer %s' % token
+        'Authorization': f'Bearer {token}',
     }
-    url = "https://api.airtable.com/v0/%s/%s/%s" % (base, table, action)
+
+    url = f"https://api.airtable.com/v0/{base}/{table}/{action}"
     if method == 'get':
         r = s.request(method, url, headers=headers, params=parameters, timeout=10)
     elif method == 'post':
         r = s.request(method, url, headers=headers, data=json.dumps(data), params=parameters, timeout=10)
     else:
         raise Exception('Method should be get or post.')
-    log('API %s call: %s' % (method, r.url) )
+    log(f'API {method} call: {r.url}')
     if r.status_code < 300:
         return r.json()
     else:

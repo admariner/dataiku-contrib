@@ -6,12 +6,11 @@ import dataikuapi
 from birdy.twitter import UserClient,TwitterApiError,ApiResponse
 
 def getAPIUrl():
-    if "dataiku_url" not in get_recipe_config():
-        dku_port = os.environ['DKU_BASE_PORT']
-        host = socket.gethostname()
-        return 'http://'+host+':'+dku_port
-    else:
+    if "dataiku_url" in get_recipe_config():
         return get_recipe_config()['dataiku_url']
+    dku_port = os.environ['DKU_BASE_PORT']
+    host = socket.gethostname()
+    return f'http://{host}:{dku_port}'
 
 def getConnection(name,key):
     APIUrl = getAPIUrl()

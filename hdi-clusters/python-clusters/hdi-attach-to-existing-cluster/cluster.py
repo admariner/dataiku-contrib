@@ -21,9 +21,13 @@ class MyCluster(Cluster):
         self.hdi_cluster_rg = self.config.get('hdiResourceGroup')
         
     def start(self):
-        logging.info("Attaching to HDI cluster %s" % self.hdi_cluster_name)
-        dss_cluster_config = dku_hdi.make_cluster_keys_and_data(self.aad_credentials, self.subscription_id, self.hdi_cluster_name, self.hdi_cluster_rg)
-        return dss_cluster_config
+        logging.info(f"Attaching to HDI cluster {self.hdi_cluster_name}")
+        return dku_hdi.make_cluster_keys_and_data(
+            self.aad_credentials,
+            self.subscription_id,
+            self.hdi_cluster_name,
+            self.hdi_cluster_rg,
+        )
 
     def stop(self, data):
         # we attach to an existing cluster so we do not stop it

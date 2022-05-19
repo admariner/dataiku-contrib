@@ -44,14 +44,12 @@ def display_images(images, titles=None, cols=4, cmap=None, norm=None,
     titles = titles if titles is not None else [""] * len(images)
     rows = len(images) // cols + 1
     plt.figure(figsize=(14, 14 * rows // cols))
-    i = 1
-    for image, title in zip(images, titles):
+    for i, (image, title) in enumerate(zip(images, titles), start=1):
         plt.subplot(rows, cols, i)
         plt.title(title, fontsize=9)
         plt.axis('off')
         plt.imshow(image.astype(np.uint8), cmap=cmap,
                    norm=norm, interpolation=interpolation)
-        i += 1
     plt.show()
 
 
@@ -276,11 +274,18 @@ def display_differences(image,
     boxes = np.concatenate([gt_box, pred_box])
     masks = np.concatenate([gt_mask, pred_mask], axis=-1)
     # Captions per instance show score/IoU
-    captions = ["" for m in gt_match] + ["{:.2f} / {:.2f}".format(
-        pred_score[i],
-        (overlaps[i, int(pred_match[i])]
-            if pred_match[i] > -1 else overlaps[i].max()))
-            for i in range(len(pred_match))]
+    captions = ["" for _ in gt_match] + [
+        "{:.2f} / {:.2f}".format(
+            pred_score[i],
+            (
+                overlaps[i, int(pred_match[i])]
+                if pred_match[i] > -1
+                else overlaps[i].max()
+            ),
+        )
+        for i in range(len(pred_match))
+    ]
+
     # Set title if not provided
     title = title or "Ground Truth and Detections\n GT=green, pred=red, captions: score/IoU"
     # Display
@@ -307,17 +312,16 @@ def draw_rois(image, rois, refined_rois, mask, class_ids, class_names, limit=10)
 
     fig, ax = plt.subplots(1, figsize=(12, 12))
     if rois.shape[0] > limit:
-        plt.title("Showing {} random ROIs out of {}".format(
-            len(ids), rois.shape[0]))
+        plt.title(f"Showing {len(ids)} random ROIs out of {rois.shape[0]}")
     else:
-        plt.title("{} ROIs".format(len(ids)))
+        plt.title(f"{len(ids)} ROIs")
 
     # Show area outside image boundaries.
     ax.set_ylim(image.shape[0] + 20, -20)
     ax.set_xlim(-50, image.shape[1] + 20)
     ax.axis('off')
 
-    for i, id in enumerate(ids):
+    for id in ids:
         color = np.random.rand(3)
         class_id = class_ids[id]
         # ROI
@@ -337,8 +341,7 @@ def draw_rois(image, rois, refined_rois, mask, class_ids, class_names, limit=10)
 
             # Label
             label = class_names[class_id]
-            ax.text(rx1, ry1 + 8, "{}".format(label),
-                    color='w', size=11, backgroundcolor="none")
+            ax.text(rx1, ry1 + 8, f"{label}", color='w', size=11, backgroundcolor="none")
 
             # Mask
             m = utils.unmold_mask(mask[id], rois[id]
@@ -369,10 +372,8 @@ def draw_box(image, box, color):
 
 def display_top_masks(image, mask, class_ids, class_names, limit=4):
     """Display the given image and the top few class masks."""
-    to_display = []
-    titles = []
-    to_display.append(image)
-    titles.append("H x W={}x{}".format(image.shape[0], image.shape[1]))
+    to_display = [image]
+    titles = [f"H x W={image.shape[0]}x{image.shape[1]}"]
     # Pick top prominent classes in this image
     unique_class_ids = np.unique(class_ids)
     mask_area = [np.sum(mask[:, :, np.where(class_ids == i)[0]])
@@ -551,11 +552,9 @@ def display_table(table):
     """
     html = ""
     for row in table:
-        row_html = ""
-        for col in row:
-            row_html += "<td>{:40}</td>".format(str(col))
-        html += "<tr>" + row_html + "</tr>"
-    html = "<table>" + html + "</table>"
+        row_html = "".join("<td>{:40}</td>".format(str(col)) for col in row)
+        html += f"<tr>{row_html}</tr>"
+    html = f"<table>{html}</table>"
     IPython.display.display(IPython.display.HTML(html))
 
 
@@ -572,7 +571,9 @@ def display_weight_stats(model):
             weight_name = weight_tensors[i].name
             # Detect problematic layers. Exclude biases of conv layers.
             alert = ""
-            if w.min() == w.max() and not (l.__class__.__name__ == "Conv2D" and i == 1):
+            if w.min() == w.max() and (
+                l.__class__.__name__ != "Conv2D" or i != 1
+            ):
                 alert += "<span style='color:red'>*** dead?</span>"
             if np.abs(w.min()) > 1000 or np.abs(w.max()) > 1000:
                 alert += "<span style='color:red'>*** Overflow?</span>"

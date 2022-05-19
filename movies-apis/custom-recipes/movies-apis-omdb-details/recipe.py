@@ -19,8 +19,8 @@ else:
     use_id = True
     lookup_col = get_recipe_config().get('imdb_id_col','')
     lookup_name = 'IMDb_id_queried'
-    if lookup_col == '':
-        raise Exception('Please provide either a column containing titles or a column containing IMDb ids.')
+if lookup_col == '':
+    raise Exception('Please provide either a column containing titles or a column containing IMDb ids.')
 
 base_query = 'https://www.omdbapi.com/?apikey={api_key}&' \
     + "tomatoes=true" \
@@ -30,10 +30,8 @@ base_query = 'https://www.omdbapi.com/?apikey={api_key}&' \
         "series" : "&type=series",
         "episode": "&type=episode",
       }[get_recipe_config()['type']]
-    # y year of relase, plot={short,full}
-
 base_query = base_query.format(api_key=api_key)
-    
+
 output_dataset = dataiku.Dataset(get_output_names_for_role('output_dataset')[0])
 output_writer = output_dataset.get_writer()
 
@@ -87,7 +85,7 @@ def write_output_schema(sample_line):
         {'name':'Type',              'type':'string'},
         {'name':'Website',           'type':'string'},
     ]
-    known_keys = frozenset([e['name'] for e in output_schema])
+    known_keys = frozenset(e['name'] for e in output_schema)
     for key,v in sample_line.items():
         if key not in known_keys:
             output_schema.append({'name':key, 'type':'string'})
@@ -99,7 +97,7 @@ results_notFound = []
 for row in input_dataset.iter_rows():
     lookup = row[lookup_col]
     if lookup is not None:
-        logger.info("looking up {}".format(lookup))
+        logger.info(f"looking up {lookup}")
         query = base_query + ('&i=' if use_id else '&t=') + lookup#.encode('utf-8')
         print(')))))))', query)
         movie = requests.get(query).json()

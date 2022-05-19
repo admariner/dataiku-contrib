@@ -43,7 +43,10 @@ def get_spreadsheet(credentials, doc_id, tab_id):
     except gspread.exceptions.SpreadsheetNotFound as e:
         raise Exception("Trying to open non-existent or inaccessible spreadsheet document.")
     except gspread.exceptions.WorksheetNotFound as e:
-        raise Exception("Trying to open non-existent sheet. Verify that the sheet name exists (%s)." % tab_id)
+        raise Exception(
+            f"Trying to open non-existent sheet. Verify that the sheet name exists ({tab_id})."
+        )
+
     except gspread.exceptions.APIError as e:
         if hasattr(e, 'response'):
             error_json = e.response.json()
@@ -52,7 +55,13 @@ def get_spreadsheet(credentials, doc_id, tab_id):
             email = credentials.get("client_email", "(email missing)")
             if error_status == 'PERMISSION_DENIED':
                 error_message = error_json.get("error", {}).get("message", "")
-                raise Exception("Access was denied with the following error: %s. Have you enabled the Sheets API? Have you shared the spreadsheet with %s?" % (error_message, email))
+                raise Exception(
+                    f"Access was denied with the following error: {error_message}. Have you enabled the Sheets API? Have you shared the spreadsheet with {email}?"
+                )
+
             if error_status == 'NOT_FOUND':
-                raise Exception("Trying to open non-existent spreadsheet document. Verify the document id exists (%s)." % doc_id)
-        raise Exception("The Google API returned an error: %s" % e)
+                raise Exception(
+                    f"Trying to open non-existent spreadsheet document. Verify the document id exists ({doc_id})."
+                )
+
+        raise Exception(f"The Google API returned an error: {e}")

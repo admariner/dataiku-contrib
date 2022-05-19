@@ -24,7 +24,7 @@ def do(payload, config, plugin_config, inputs):
         csv_valid_filenames = []
         for f in csv_files_root_mf:
             schema = retrieve_schema_from_pandas_compatible_csv_file(f, sep)
-            if len([col for col in required_columns if col not in schema]) == 0 :
+            if not [col for col in required_columns if col not in schema]:
                 valid_file = {
                     "path": f,
                     "name": os.path.basename(f)

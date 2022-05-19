@@ -23,9 +23,7 @@ def display_new_token():
         "scope"        : request.args.get("powerbi-scope",      "openid")
     }
     response = requests.post('https://login.microsoftonline.com/common/oauth2/token', data=data)
-    o = {}
-    #o["powerbi-auth-response"] = response.json()
-    o["powerbi-access-token"] = response.json().get("access_token")    
+    o = {"powerbi-access-token": response.json().get("access_token")}
     return json.dumps(o)
 
 
@@ -66,16 +64,18 @@ def save_new_token():
     # Read in the conf and get a token
     conf = json.loads(request.data)
     key = conf["api-key"]
-    pbi = {}
-    pbi["username"]      = conf["powerbi-username"]
-    pbi["password"]      = conf["powerbi-password"]
-    pbi["client_id"]     = conf["powerbi-client-id"]
-    pbi["client_secret"] = conf["powerbi-client-secret"]
-    pbi["resource"]      = conf["powerbi-resource"]
-    pbi["grant_type"]    = conf["powerbi-grant-type"]
-    pbi["scope"]         = conf["powerbi-scope"]
+    pbi = {
+        "username": conf["powerbi-username"],
+        "password": conf["powerbi-password"],
+        "client_id": conf["powerbi-client-id"],
+        "client_secret": conf["powerbi-client-secret"],
+        "resource": conf["powerbi-resource"],
+        "grant_type": conf["powerbi-grant-type"],
+        "scope": conf["powerbi-scope"],
+    }
+
     response = requests.post('https://login.microsoftonline.com/common/oauth2/token', data=pbi)
-        
+
     # Save the token
     data = pbi
     data["password"]       = encrypt_string(conf["powerbi-password"], key)
@@ -86,14 +86,13 @@ def save_new_token():
     data["webapp_project"] = conf["webapp-url"].split("/")[-3]
     data["webapp_id"]      = conf["webapp-url"].split("/")[-2]
     data["project_key"]    = os.environ["DKU_CURRENT_PROJECT_KEY"]
-    
+
     set_dss_variables(
         dataiku.default_project_key(),
         data
     )
     # Send back some results
-    o = {}
-    o["powerbi-access-token"] = data["access_token"]
+    o = {"powerbi-access-token": data["access_token"]}
     return json.dumps(o)
 
 
@@ -105,18 +104,20 @@ def get_existing_credentials():
     project = dss.get_project(dataiku.default_project_key())
     variables = project.get_variables()["standard"]
     conf = variables.get("powerbi-settings", None)
-    
+
     # Decrypt
     key = request.args.get("api-key")
-    pbi = {}
-    pbi["powerbi-username"]      = conf["username"]
-    pbi["powerbi-password"]      = decrypt_string(conf["password"], key)
+    pbi = {
+        "powerbi-username": conf["username"],
+        "powerbi-password": decrypt_string(conf["password"], key),
+    }
+
     pbi["powerbi-client-id"]     = conf["client_id"]
     pbi["powerbi-client-secret"] = decrypt_string(conf["client_secret"], key)
     pbi["powerbi-resource"]      = conf["resource"]
     pbi["powerbi-grant-type"]    = conf["grant_type"]
     pbi["powerbi-scope"]         = conf["scope"]
-    
+
     # Send back some results
     return json.dumps(pbi)
 
@@ -129,21 +130,21 @@ def get_token():
     project = dss.get_project(dataiku.default_project_key())
     variables = project.get_variables()["standard"]
     conf = variables.get("powerbi-settings", None)   
-    
+
     # Decrypt
     key = request.args.get("api-key")
-    pbi = {}
-    pbi["username"]      = conf["username"]
-    pbi["password"]      = decrypt_string(conf["password"], key)
+    pbi = {
+        "username": conf["username"],
+        "password": decrypt_string(conf["password"], key),
+    }
+
     pbi["client_id"]     = conf["client_id"]
     pbi["client_secret"] = decrypt_string(conf["client_secret"], key)
     pbi["resource"]      = conf["resource"]
     pbi["grant_type"]    = conf["grant_type"]
     pbi["scope"]         = conf["scope"]
-    
+
     # Get the token
     response = requests.post('https://login.microsoftonline.com/common/oauth2/token', data=pbi)
-    o = {}
-    o["token"] = response.json().get("access_token") 
-    
+    o = {"token": response.json().get("access_token")}
     return json.dumps(o)

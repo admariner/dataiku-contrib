@@ -88,7 +88,7 @@ def run_geocoding_recipe(is_detailed):
 
         def parse_results(api_result):
             n = len(api_result[u'locations'])
-            for ii in range(0,n):
+            for ii in range(n):
                 result_dict = api_result[u'locations'][ii][u'attributes']
                 UserObjectID = result_dict[u'ResultID']
                 result_dict['latestWkid'] = api_result[u'spatialReference']['latestWkid']

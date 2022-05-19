@@ -93,9 +93,9 @@ class MyCluster(Cluster):
         self.dss_cluster_name = cluster_name
         self.config = config
         self.plugin_config = plugin_config
-        
+
         self.aad_client_credentials = None
-        
+
         #TODO: check when credentials are not the right way or incorrect
         if config['aadAuth'] == "user_pass":
             print("Using User Password authentication")
@@ -110,7 +110,7 @@ class MyCluster(Cluster):
             self.aad_client_credentials = ServicePrincipalCredentials(self.client_id, self.client_secret, tenant=self.tenant_id)
         else:
             raise ValueError('Unsupported authentication method')
-        
+
         #params
         self.subscription_id = config['subscription_id']
         self.cluster_version = config['cluster_version']
@@ -126,11 +126,14 @@ class MyCluster(Cluster):
         self.ssh_username = config['ssh_username']
         #TODO: implement ssh with uploaded key
         self.ssh_password = config['ssh_password']
-        
-        self.storage_account_name = '{}.blob.core.windows.net'.format(config['storage_account'])
+
+        self.storage_account_name = (
+            f"{config['storage_account']}.blob.core.windows.net"
+        )
+
         self.storage_account_key = config['storage_account_key']
         self.storage_account_container = config['storage_account_container']
-        
+
         self.vnet_name = config['vnet_name']
         self.subnet_name = config['subnet_name']
         self.vnet_id = '/subscriptions/{subsId}/resourceGroups/{rgName}/providers/Microsoft.Network/virtualNetworks/{vnetName}'.format(
@@ -146,7 +149,7 @@ class MyCluster(Cluster):
             id=self.vnet_id,
             subnet=self.subnet_id
         )
-        
+
         #TODO: better test the subscription_id here ?
         self.hdi_client = HDInsightManagementClient(self.aad_client_credentials, self.subscription_id)
         
@@ -160,7 +163,7 @@ class MyCluster(Cluster):
                   * an dict of data to pass to to other methods when handling the cluster created
         """        
         logging.info("Init cluster for HDI")
-        
+
         create_params = ClusterCreateParametersExtended(
             location=self.location,
             tags={},
@@ -229,11 +232,10 @@ class MyCluster(Cluster):
                 self.hdi_client.clusters.delete(self.resource_group_name, self.hdi_cluster_name)
             except:
                 logging.error('Could not delete provisioned resources')
-                pass
             raise
-            
-        logging.info('Poller resturned {}'.format(pformat(cluster)))
-        
+
+        logging.info(f'Poller resturned {pformat(cluster)}')
+
         try:
             dss_cluster_config = dku_hdi.make_cluster_keys_and_data(self.aad_client_credentials, self.subscription_id, self.hdi_cluster_name, self.resource_group_name)
         except:
@@ -242,9 +244,8 @@ class MyCluster(Cluster):
                 self.hdi_client.clusters.delete(self.resource_group_name, self.hdi_cluster_name)
             except:
                 logging.error('Could not delete created cluster')
-                pass
             raise
-            
+
         return dss_cluster_config
 
     def stop(self, data):
@@ -261,8 +262,8 @@ class MyCluster(Cluster):
             ret = delete_poller.result()
         except:
             raise
-        
-        logging.info('Cluster deleted successfully returned {}'.format(ret))
-        
+
+        logging.info(f'Cluster deleted successfully returned {ret}')
+
         return
    

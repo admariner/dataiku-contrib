@@ -24,10 +24,15 @@ class MyConnector(Connector):
         self.cache_data = {}
 
         # Cache file
-        if self.cache_folder != "":
+        if not self.cache_folder:
+            self.cache_folder = None
+            self.cache_file = None
 
-            name = str(self.latitude) + '-' + str(self.longitude)
-            filename = "cache-forecastio-history-%s.json" % base64.urlsafe_b64encode(name.encode())
+        else:
+
+            name = f'{self.latitude}-{self.longitude}'
+            filename = f"cache-forecastio-history-{base64.urlsafe_b64encode(name.encode())}.json"
+
             self.cache_file = os.path.join(self.cache_folder, filename)
 
             # create directory if required
@@ -39,10 +44,6 @@ class MyConnector(Connector):
                 with open(self.cache_file, 'w') as f:
                     json.dump({}, f)
                     f.close()
-        else:
-            self.cache_folder = None
-            self.cache_file = None
-
         # The API returns the number of call made for today. We keep it to optionnaly limit the number of calls.
         # For te first call, we don't know the actual value but we assume it is 0.
         self.api_calls = 0
@@ -63,7 +64,7 @@ class MyConnector(Connector):
     def __load_cache(self):
         """ Reading json cache """
         if self.cache_file:
-            logger.info("Forecast.io plugin - Loading cache (%s)" % self.cache_file)
+            logger.info(f"Forecast.io plugin - Loading cache ({self.cache_file})")
             with open(self.cache_file, 'r') as f:
                 self.cache_data = json.load(f)
                 f.close()
@@ -72,7 +73,7 @@ class MyConnector(Connector):
     def __save_cache(self):
         """ Writing json cache """
         if self.cache_file:
-            logger.info("Forecast.io plugin - Saving cache (%s)" % self.cache_file)
+            logger.info(f"Forecast.io plugin - Saving cache ({self.cache_file})")
             with open(self.cache_file, 'w') as f:
                 json.dump(self.cache_data, f)
                 f.close()
@@ -88,13 +89,13 @@ class MyConnector(Connector):
         if day_key in self.cache_data.keys():
 
             # In cache
-            logger.info("Forecast.io plugin - Already in cache for %s" % day_key)
+            logger.info(f"Forecast.io plugin - Already in cache for {day_key}")
             return self.cache_data.get(day_key)
 
         else:
 
             # Not in cache -> API request
-            logger.info("Forecast.io plugin - Request for %s" % day_key)
+            logger.info(f"Forecast.io plugin - Request for {day_key}")
 
             # checking limits
             if self.api_limit > -1 and self.api_calls >= self.api_limit:
@@ -112,31 +113,33 @@ class MyConnector(Connector):
                 "exclude": "currently,minutely"
             }
             r = requests.get(
-                url='https://api.darksky.net/forecast/%s/%s,%s,%s' % (self.api_key, self.latitude, self.longitude, day_key),
+                url=f'https://api.darksky.net/forecast/{self.api_key}/{self.latitude},{self.longitude},{day_key}',
                 params=params,
-                headers=headers
+                headers=headers,
             )
-            
+
+
             # verification of the status code
             if r.status_code != 200:
-                logger.info("Forecast.io plugin - Error in request (status code: %s)" % r.status_code)
-                logger.info("Forecast.io plugin - Response: %s" % r.text)
+                logger.info(
+                    f"Forecast.io plugin - Error in request (status code: {r.status_code})"
+                )
+
+                logger.info(f"Forecast.io plugin - Response: {r.text}")
                 r.raise_for_status()
                 sys.exit()
 
             # results
             result = r.json()
             self.api_calls = r.headers.get('X-Forecast-API-Calls')
-            logger.info("Forecast.io plugin - X-Forecast-API-Calls: %s" % self.api_calls)
+            logger.info(f"Forecast.io plugin - X-Forecast-API-Calls: {self.api_calls}")
 
-            if self.api_calls is not None:
-                self.api_calls = int(self.api_calls)
-            else:
-                self.api_calls = -1
-
+            self.api_calls = int(self.api_calls) if self.api_calls is not None else -1
             # add to cache only if not a prediction
-            if self.cache_file and day < datetime.datetime.today().replace(hour=0, minute=0, second=0, microsecond=0):
-                logger.info("Forecast.io plugin - Adding to cache: %s" % day_key)
+            if self.cache_file and day < datetime.datetime.now().replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ):
+                logger.info(f"Forecast.io plugin - Adding to cache: {day_key}")
                 self.cache_data[day_key] = result
 
             sleep(0.1)
@@ -156,7 +159,10 @@ class MyConnector(Connector):
         #     raise ValueError("The end date must occurs before today")
 
         list_datetimes = [from_date + datetime.timedelta(days=x) for x in range((to_date-from_date).days + 1)]
-        logger.info("Forecast.io plugin - List of dates: %s" % ", ".join([d.strftime("%d/%m/%Y") for d in list_datetimes]))
+        logger.info(
+            f'Forecast.io plugin - List of dates: {", ".join([d.strftime("%d/%m/%Y") for d in list_datetimes])}'
+        )
+
 
         # Test request
         # TODO
