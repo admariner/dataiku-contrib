@@ -65,11 +65,11 @@ class AbstractDSSConfigBuilder(object):
         
     def update_config_versions(self):
         self.conf_tags = self.ambari_client.set_desired_configs_tags(self.cluster_name)
-        logging.info('Using conf tags %s' % self.conf_tags)
+        logging.info(f'Using conf tags {self.conf_tags}')
         for c_name in self.REQUIRED_CONFIGS_FILENAMES:
-            print('required configs filenames %s'% self.REQUIRED_CONFIGS_FILENAMES)
+            print(f'required configs filenames {self.REQUIRED_CONFIGS_FILENAMES}')
             self.required_configs[c_name] = self.ambari_client.get_config(self.cluster_name, config_name=c_name)
-        
+
         return self.required_configs.keys()
     
     def make_hs2_url_from_zk(self, cluster_name):
@@ -78,25 +78,27 @@ class AbstractDSSConfigBuilder(object):
     
     def make_storage_from_hdi_core_info(self, hdi_core_info):
         if not hdi_core_info.get('fs.defaultFS', None):
-            raise Exception('hdi_core_info does not contain default FS or is not correct {}'.format(hdi_core_info))
-        
+            raise Exception(
+                f'hdi_core_info does not contain default FS or is not correct {hdi_core_info}'
+            )
+
+
         default_fs = hdi_core_info['fs.defaultFS']
         rsp = urlsplit(default_fs)
-        
-        #TODO: put a real storage representation one day...
-        if rsp.scheme == 'wasb':
-            blob_fqdn = rsp.hostname
-            logging.info('Detected default wasb storage {}'.format(blob_fqdn))
-        else:
-            raise ValueError('Detected unsupported storage type: {}'.format(rsp.scheme))
-        
+
+        if rsp.scheme != 'wasb':
+            raise ValueError(f'Detected unsupported storage type: {rsp.scheme}')
+
+        blob_fqdn = rsp.hostname
+        logging.info(f'Detected default wasb storage {blob_fqdn}')
         #Adding default keyprovider to Simple type, if not ShellProvider will be used on workers and generate errors
         wasb_encrypt_key_provider = self.WASB_ENCRYPT_KEY_PROVIDER_META.format(blob_fqdn=blob_fqdn)
         hdi_core_info[wasb_encrypt_key_provider] = 'org.apache.hadoop.fs.azure.SimpleKeyProvider'
-        spark_conf = {}
-        for k in hdi_core_info.keys():
-            spark_conf['spark.hadoop.{storage_key}'.format(storage_key=k)] = hdi_core_info[k]
-        
+        spark_conf = {
+            'spark.hadoop.{storage_key}'.format(storage_key=k): hdi_core_info[k]
+            for k in hdi_core_info.keys()
+        }
+
         return {'hadoop': hdi_core_info,
                 #Need to duplicate WASB storage config in Hive if not it will not be seen by HProxy
                 'hive': hdi_core_info,
@@ -119,34 +121,38 @@ class AbstractDSSConfigBuilder(object):
         dss_services_config = {}
         for service in self.dss_cluster_template:
             if add_overwrite_keys.get(service, None):
-                logging.info('Found overriding keys for service{}'.format(service))
+                logging.info(f'Found overriding keys for service{service}')
             service_keys = copy.deepcopy(self.dss_cluster_template[service])
             service_keys = self.make_extra_conf(service_keys, add_overwrite_keys.get(service, None))
             dss_services_config[service] = service_keys
-        
+
         return dss_services_config
     
     
     def make_extra_conf(self, extra_conf_template, add_overwrite_keys=None):
         for k in extra_conf_template:
-            value = self._generate_value_from_template_key(k, extra_conf_template[k])
-            if value:
+            if value := self._generate_value_from_template_key(
+                k, extra_conf_template[k]
+            ):
                 extra_conf_template[k] = value
             else:
-                logging.warn('Value for key %s is None removing from config' % k)
+                logging.warn(f'Value for key {k} is None removing from config')
                 extra_conf_template.pop(k)
-        
+
         # Useful to build storage config - keep it after first template transformation
         if add_overwrite_keys:
             for k in add_overwrite_keys:
                 new_value = add_overwrite_keys[k]
                 if extra_conf_template.get(k):
-                    logging.warn('Overriding key:{} value: {} with new_value {}'.format(k,extra_conf_template[k], new_value))
+                    logging.warn(
+                        f'Overriding key:{k} value: {extra_conf_template[k]} with new_value {new_value}'
+                    )
+
                 else:
-                    logging.info('Adding new key:{} with value: {}'.format(k, new_value))
-                
+                    logging.info(f'Adding new key:{k} with value: {new_value}')
+
                 extra_conf_template[k] = new_value
-        
+
         return self._make_extra_conf_as_kv_list(extra_conf_template)
         
         
@@ -159,27 +165,33 @@ class AbstractDSSConfigBuilder(object):
         target = target_dict.get('target', None)
         value_key = target_dict.get('key', key)
         value_default = target_dict.get('value', None)
-        
+
         if not target:
             if value_default:
-                logging.info('Returning default value {}'.format(value_default))
+                logging.info(f'Returning default value {value_default}')
                 return value_default
             else:
                 raise ValueError('Target is None with no default value')
-                
+
         return self.get_kv_from_conf(target, value_key)
     
     def get_kv_from_conf(self, conf_file_name, conf_key):
         # cluster config file name as it is returned by ambari e.g core-site, hdfs-site etc.
         if not self.required_configs.get(conf_file_name, None):
-            raise ValueError('Target file {} does not exist in downloaded configurations'.format(conf_file_name))
-        
+            raise ValueError(
+                f'Target file {conf_file_name} does not exist in downloaded configurations'
+            )
+
+
         try:
             ret_value = self.required_configs[conf_file_name][conf_key]
         except:
-            logging.error('Required key {} does not exist in target file {}, dumping all configuration present'.format(conf_key, conf_file_name))
+            logging.error(
+                f'Required key {conf_key} does not exist in target file {conf_file_name}, dumping all configuration present'
+            )
+
             logging.error(self.required_configs)
             raise
-        
+
         return ret_value
 

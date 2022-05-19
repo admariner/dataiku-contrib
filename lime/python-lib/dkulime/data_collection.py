@@ -23,11 +23,11 @@ class LimeTrainDataAnalysis(PreprocessingDataCollector):
 
     def get_feature_analysis_data(self, name, params):
 
-        output = {"stats": {}}
-        logger.info("Looking at %s... (type=%s)" % (name, params["type"]))
+        logger.info(f'Looking at {name}... (type={params["type"]})')
         series = self.df[name]
 
         if self.feature_needs_analysis(params):
+            output = {"stats": {}}
             if params["type"] == 'NUMERIC':
                 return self._get_numeric_feature_analysis_data(series, output)
             elif params["type"] == 'CATEGORY':
@@ -62,7 +62,7 @@ class LimeTrainDataAnalysis(PreprocessingDataCollector):
         #FIXME: N/A will be generated as nan isinstance(float) np.isnan() true
         category_stats = series.value_counts(dropna=False)
         nulls = series.isnull().sum()
-        candidates = [(k, v) for (k, v) in category_stats.iloc[0:self.max_cat_safety].iteritems()]
+        candidates = list(category_stats.iloc[:self.max_cat_safety].iteritems())
         output['category_value_count'] = candidates
         output['nulls_count'] = nulls
         output['total_count'] = sum(v for k,v in candidates)

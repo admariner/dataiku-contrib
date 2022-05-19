@@ -16,7 +16,10 @@ class MilestonesConnector(Connector):
         logging.info("Clubhouse: fetching epics")
         headers = {"Content-Type": "application/json"}
 
-        r = requests.get(self.endpoint + "/milestones?token=" + self.key, headers=headers)
+        r = requests.get(
+            f"{self.endpoint}/milestones?token={self.key}", headers=headers
+        )
+
         r.raise_for_status()
         try:
             return json.loads(r.content)
@@ -33,12 +36,10 @@ class MilestonesConnector(Connector):
         query_date = datetime.datetime.now()
 
         rows = self.list_milestones()
-        nb = 0
-        for row in rows:
+        for nb, row in enumerate(rows):
             if 0 <= records_limit <= nb:
                 logging.info("Reached records_limit (%i), stopping." % records_limit)
                 return
 
             row[u"query_date"] = query_date
             yield row
-            nb += 1

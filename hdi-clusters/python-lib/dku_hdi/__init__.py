@@ -21,9 +21,9 @@ def make_cluster_keys_and_data(aad_credentials, subscription_id, hdi_cluster_nam
     hdi_client = HDInsightManagementClient(aad_credentials, subscription_id)
     cluster = hdi_client.clusters.get(hdi_cluster_rg, hdi_cluster_name)
     cluster_core_info = hdi_client.configurations.get(hdi_cluster_rg, hdi_cluster_name, 'core-site')
-    logging.info('HDI client retreived core info {}'.format(pformat(cluster_core_info)))
-    
-    cluster_gateway = hdi_client.configurations.get(hdi_cluster_rg, hdi_cluster_name, 'gateway')    
+    logging.info(f'HDI client retreived core info {pformat(cluster_core_info)}')
+
+    cluster_gateway = hdi_client.configurations.get(hdi_cluster_rg, hdi_cluster_name, 'gateway')
     try:
         ambari_user = cluster_gateway['restAuthCredential.username']
         ambari_pwd = cluster_gateway['restAuthCredential.password']
@@ -32,7 +32,12 @@ def make_cluster_keys_and_data(aad_credentials, subscription_id, hdi_cluster_nam
         raise
 
     cluster_endpoints = cluster.properties.connectivity_endpoints
-    ambari_host = ['https://' + e.location for e in cluster_endpoints if e.port == 443 and e.name == 'HTTPS'][0]
+    ambari_host = [
+        f'https://{e.location}'
+        for e in cluster_endpoints
+        if e.port == 443 and e.name == 'HTTPS'
+    ][0]
+
 
     ambari_client = HdiAmbariClient(ambari_host, ambari_user, ambari_pwd)
     conf_tags = ambari_client.set_desired_configs_tags(hdi_cluster_name)
@@ -41,6 +46,6 @@ def make_cluster_keys_and_data(aad_credentials, subscription_id, hdi_cluster_nam
     dss_config_builder = AbstractDSSConfigBuilder(hdi_cluster_name, ambari_client)
     storage_info = dss_config_builder.make_storage_from_hdi_core_info(cluster_core_info)
     dss_config = dss_config_builder.make_dss_config(storage_info)
-    logging.info('Returning DSS cluster config {}'.format(pformat(dss_config)))
+    logging.info(f'Returning DSS cluster config {pformat(dss_config)}')
 
     return [dss_config, {'hdiClusterId': hdi_cluster_name, 'subscriptionId': subscription_id, 'resourceGroupName': hdi_cluster_rg}]

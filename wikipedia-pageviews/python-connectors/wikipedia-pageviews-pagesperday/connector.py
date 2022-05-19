@@ -30,7 +30,7 @@ class PagePerDayConnector(Connector):
 
             project = project.strip()
 
-            logger.info("Query for %s : %s" % (project, page))
+            logger.info(f"Query for {project} : {page}")
             resp = dkuwikipedia.query_page(project, page, beg_date, end_date)
             dic = resp.json()
             for item in dic.get("items", []):

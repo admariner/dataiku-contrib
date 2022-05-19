@@ -45,7 +45,7 @@ def log(text, array=None):
             text += ("min: {:10.5f}  max: {:10.5f}".format(array.min(),array.max()))
         else:
             text += ("min: {:10}  max: {:10}".format("",""))
-        text += "  {}".format(array.dtype)
+        text += f"  {array.dtype}"
     print(text)
 
 
@@ -102,25 +102,35 @@ def identity_block(input_tensor, kernel_size, filters, stage, block,
         train_bn: Boolean. Train or freeze Batch Norm layers
     """
     nb_filter1, nb_filter2, nb_filter3 = filters
-    conv_name_base = 'res' + str(stage) + block + '_branch'
-    bn_name_base = 'bn' + str(stage) + block + '_branch'
+    conv_name_base = f'res{str(stage)}{block}_branch'
+    bn_name_base = f'bn{str(stage)}{block}_branch'
 
-    x = KL.Conv2D(nb_filter1, (1, 1), name=conv_name_base + '2a',
-                  use_bias=use_bias)(input_tensor)
-    x = BatchNorm(name=bn_name_base + '2a')(x, training=train_bn)
+    x = KL.Conv2D(
+        nb_filter1, (1, 1), name=f'{conv_name_base}2a', use_bias=use_bias
+    )(input_tensor)
+
+    x = BatchNorm(name=f'{bn_name_base}2a')(x, training=train_bn)
     x = KL.Activation('relu')(x)
 
-    x = KL.Conv2D(nb_filter2, (kernel_size, kernel_size), padding='same',
-                  name=conv_name_base + '2b', use_bias=use_bias)(x)
-    x = BatchNorm(name=bn_name_base + '2b')(x, training=train_bn)
+    x = KL.Conv2D(
+        nb_filter2,
+        (kernel_size, kernel_size),
+        padding='same',
+        name=f'{conv_name_base}2b',
+        use_bias=use_bias,
+    )(x)
+
+    x = BatchNorm(name=f'{bn_name_base}2b')(x, training=train_bn)
     x = KL.Activation('relu')(x)
 
-    x = KL.Conv2D(nb_filter3, (1, 1), name=conv_name_base + '2c',
-                  use_bias=use_bias)(x)
-    x = BatchNorm(name=bn_name_base + '2c')(x, training=train_bn)
+    x = KL.Conv2D(
+        nb_filter3, (1, 1), name=f'{conv_name_base}2c', use_bias=use_bias
+    )(x)
+
+    x = BatchNorm(name=f'{bn_name_base}2c')(x, training=train_bn)
 
     x = KL.Add()([x, input_tensor])
-    x = KL.Activation('relu', name='res' + str(stage) + block + '_out')(x)
+    x = KL.Activation('relu', name=f'res{str(stage)}{block}_out')(x)
     return x
 
 
@@ -139,29 +149,47 @@ def conv_block(input_tensor, kernel_size, filters, stage, block,
     And the shortcut should have subsample=(2,2) as well
     """
     nb_filter1, nb_filter2, nb_filter3 = filters
-    conv_name_base = 'res' + str(stage) + block + '_branch'
-    bn_name_base = 'bn' + str(stage) + block + '_branch'
+    conv_name_base = f'res{str(stage)}{block}_branch'
+    bn_name_base = f'bn{str(stage)}{block}_branch'
 
-    x = KL.Conv2D(nb_filter1, (1, 1), strides=strides,
-                  name=conv_name_base + '2a', use_bias=use_bias)(input_tensor)
-    x = BatchNorm(name=bn_name_base + '2a')(x, training=train_bn)
+    x = KL.Conv2D(
+        nb_filter1,
+        (1, 1),
+        strides=strides,
+        name=f'{conv_name_base}2a',
+        use_bias=use_bias,
+    )(input_tensor)
+
+    x = BatchNorm(name=f'{bn_name_base}2a')(x, training=train_bn)
     x = KL.Activation('relu')(x)
 
-    x = KL.Conv2D(nb_filter2, (kernel_size, kernel_size), padding='same',
-                  name=conv_name_base + '2b', use_bias=use_bias)(x)
-    x = BatchNorm(name=bn_name_base + '2b')(x, training=train_bn)
+    x = KL.Conv2D(
+        nb_filter2,
+        (kernel_size, kernel_size),
+        padding='same',
+        name=f'{conv_name_base}2b',
+        use_bias=use_bias,
+    )(x)
+
+    x = BatchNorm(name=f'{bn_name_base}2b')(x, training=train_bn)
     x = KL.Activation('relu')(x)
 
     x = KL.Conv2D(nb_filter3, (1, 1), name=conv_name_base +
                   '2c', use_bias=use_bias)(x)
-    x = BatchNorm(name=bn_name_base + '2c')(x, training=train_bn)
+    x = BatchNorm(name=f'{bn_name_base}2c')(x, training=train_bn)
 
-    shortcut = KL.Conv2D(nb_filter3, (1, 1), strides=strides,
-                         name=conv_name_base + '1', use_bias=use_bias)(input_tensor)
-    shortcut = BatchNorm(name=bn_name_base + '1')(shortcut, training=train_bn)
+    shortcut = KL.Conv2D(
+        nb_filter3,
+        (1, 1),
+        strides=strides,
+        name=f'{conv_name_base}1',
+        use_bias=use_bias,
+    )(input_tensor)
+
+    shortcut = BatchNorm(name=f'{bn_name_base}1')(shortcut, training=train_bn)
 
     x = KL.Add()([x, shortcut])
-    x = KL.Activation('relu', name='res' + str(stage) + block + '_out')(x)
+    x = KL.Activation('relu', name=f'res{str(stage)}{block}_out')(x)
     return x
 
 
@@ -227,8 +255,7 @@ def apply_box_deltas_graph(boxes, deltas):
     x1 = center_x - 0.5 * width
     y2 = y1 + height
     x2 = x1 + width
-    result = tf.stack([y1, x1, y2, x2], axis=1, name="apply_box_deltas_out")
-    return result
+    return tf.stack([y1, x1, y2, x2], axis=1, name="apply_box_deltas_out")
 
 
 def clip_boxes_graph(boxes, window):
@@ -471,8 +498,7 @@ def overlaps_graph(boxes1, boxes2):
     union = b1_area + b2_area - intersection
     # 4. Compute IoU and reshape to [boxes1, boxes2]
     iou = intersection / union
-    overlaps = tf.reshape(iou, [tf.shape(boxes1)[0], tf.shape(boxes2)[0]])
-    return overlaps
+    return tf.reshape(iou, [tf.shape(boxes1)[0], tf.shape(boxes2)[0]])
 
 
 def detection_targets_graph(proposals, gt_class_ids, gt_boxes, gt_masks, config):
@@ -644,12 +670,12 @@ class DetectionTargetLayer(KE.Layer):
         # Slice the batch and run a graph for each slice
         # TODO: Rename target_bbox to target_deltas for clarity
         names = ["rois", "target_class_ids", "target_bbox", "target_mask"]
-        outputs = utils.batch_slice(
+        return utils.batch_slice(
             [proposals, gt_class_ids, gt_boxes, gt_masks],
-            lambda w, x, y, z: detection_targets_graph(
-                w, x, y, z, self.config),
-            self.config.IMAGES_PER_GPU, names=names)
-        return outputs
+            lambda w, x, y, z: detection_targets_graph(w, x, y, z, self.config),
+            self.config.IMAGES_PER_GPU,
+            names=names,
+        )
 
     def compute_output_shape(self, input_shape):
         return [
@@ -991,8 +1017,7 @@ def smooth_l1_loss(y_true, y_pred):
     """
     diff = K.abs(y_true - y_pred)
     less_than_one = K.cast(K.less(diff, 1.0), "float32")
-    loss = (less_than_one * 0.5 * diff**2) + (1 - less_than_one) * (diff - 0.5)
-    return loss
+    return (less_than_one * 0.5 * diff**2) + (1 - less_than_one) * (diff - 0.5)
 
 
 def rpn_class_loss_graph(rpn_match, rpn_class_logits):

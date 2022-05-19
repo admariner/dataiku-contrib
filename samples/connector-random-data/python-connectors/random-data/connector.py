@@ -6,11 +6,7 @@ class RandomDataConnector(Connector):
 
     def generate_rows(self, dataset_schema=None, dataset_partitioning=None, partition_id=None, records_limit=-1):
         for i in xrange(1, 10):
-            yield {
-                "column1" : "val1_%s" % i,
-                "column2" : "val2",
-                "column3" : 3
-            }
+            yield {"column1": f"val1_{i}", "column2": "val2", "column3": 3}
 
     def get_read_schema(self):
         return {

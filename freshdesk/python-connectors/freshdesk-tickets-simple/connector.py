@@ -8,4 +8,4 @@ class FreshdeskTicketsConnector(FreshdeskConnector, Connector):
         view = config.get("view", '')
         if view == '':
             view = 'all_tickets'
-        self.path = '/helpdesk/tickets/filter/' + view + '?format=json&wf_order=created_at&page='
+        self.path = f'/helpdesk/tickets/filter/{view}?format=json&wf_order=created_at&page='

@@ -48,8 +48,6 @@ DETAILS_DIR = details_folder.get_path()
 
 output_images = get_recipe_config().get('save_image')
 
-#### Recipe body ####
-
 class InferenceConfig(coco.CocoConfig):
     # Set batch size to 1 since we'll be running inference on
     # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
@@ -89,23 +87,20 @@ result = model.detect(image_list,verbose=1)
 
 for i, im in enumerate(result):
     result[i]["image_path"] = to_score[i]
-result_json = []
+result_json = [jsonify(res) for res in result]
 
-
-for res in result:
-    result_json.append(jsonify(res))
 
 #### Writing output to folders #####
-with open(DETAILS_DIR + '/results.json', 'w') as outfile:
+with open(f'{DETAILS_DIR}/results.json', 'w') as outfile:
     json.dump(result_json, 
               outfile)
 
 
-if output_images : 
+if output_images: 
     for ix, im_path in enumerate(to_score):
         r = result[ix]
         image = image_list[ix]
-        im_name = im_path[:-4] + '_scored.png'
+        im_name = f'{im_path[:-4]}_scored.png'
         visualize.save_instance(image, r['rois'],
                                 r['masks'], r['class_ids'],
                                 class_names, r['scores'], 

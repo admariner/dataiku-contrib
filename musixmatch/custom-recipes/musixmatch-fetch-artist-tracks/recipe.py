@@ -24,19 +24,25 @@ class Track:
 def build_request_string(page_num, artistID, apiKey):
     endpoint = 'http://api.musixmatch.com/ws/1.1/'
     method = 'track.search'
-    query_string = 'f_artist_id='+str(artistID)+'&page_size=100&f_has_lyrics=1'
+    query_string = f'f_artist_id={str(artistID)}&page_size=100&f_has_lyrics=1'
 
-    request_string = endpoint+method+'?apikey='+apiKey+'&'+query_string+'&page='+str(page_num)
-    return request_string
+    return (
+        endpoint
+        + method
+        + '?apikey='
+        + apiKey
+        + '&'
+        + query_string
+        + '&page='
+        + str(page_num)
+    )
 
 def build_lyrics_request(apiKey, trackId):
     endpoint = 'http://api.musixmatch.com/ws/1.1/'
     method = 'track.lyrics.get'
-    query_string = 'track_id='+str(trackId)
+    query_string = f'track_id={str(trackId)}'
 
-    request_string = endpoint+method+'?apikey='+str(apiKey)+'&'+query_string
-    
-    return request_string
+    return endpoint+method+'?apikey='+str(apiKey)+'&'+query_string
 
 # Recipe inputs
 artist_dataset_name = get_input_names_for_role('artist_list')[0]
@@ -72,10 +78,10 @@ for artistId in onlyID:
     page_num=1
     while again:
         request_string = build_request_string(page_num, artistId, input_api_key)
-        logger.info('Starting request {}'.format(page_num))
-        logger.info('Sended request: {}'.format(request_string))
+        logger.info(f'Starting request {page_num}')
+        logger.info(f'Sended request: {request_string}')
         contents = requests.get(request_string)
-        logger.info('Answer code {}'.format(contents.status_code))
+        logger.info(f'Answer code {contents.status_code}')
         d = json.loads(contents.content)
         print('aaaaaaaaaaaaa ', d)
         track_list = d['message']['body']['track_list']
@@ -92,8 +98,8 @@ for artistId in onlyID:
                                                track['track']['num_favourite']
                                                ))
             page_num +=1
-            logger.info('Complete request {}'.format(request_string))
-            
+            logger.info(f'Complete request {request_string}')
+
     for t in parsed_track_list:
         name_col.append(t.track_name)
         id_col.append(t.track_id)
@@ -118,21 +124,18 @@ lyrics_list = []
 explicit_list = []
 instrumental_list = []
 
-track_request_num = 1
-for track_id in id_col:
+for track_request_num, track_id in enumerate(id_col, start=1):
     request_string = build_lyrics_request(input_api_key, track_id)
-    logger.info('Starting track request {}'.format(track_request_num))
-    logger.info('Sended track request: {}'.format(track_request_num))
+    logger.info(f'Starting track request {track_request_num}')
+    logger.info(f'Sended track request: {track_request_num}')
     contents = requests.get(request_string)
-    logger.info('Answer code {}'.format(contents.status_code))
+    logger.info(f'Answer code {contents.status_code}')
     d = json.loads(contents.content)
-    
+
     lyrics_object = d['message']['body']['lyrics']
     lyrics_list.append(lyrics_object['lyrics_body'])
     explicit_list.append(lyrics_object['explicit'])
-    
-    track_request_num +=1
-    
+
 track_df.lyrics_list = lyrics_list
 track_df.explicit = explicit_list
 

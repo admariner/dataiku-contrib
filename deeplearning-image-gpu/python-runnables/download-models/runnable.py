@@ -70,11 +70,10 @@ class MyRunnable(Runnable):
 
         def update_percent(percent, last_update_time):
             new_time = time.time()
-            if (new_time - last_update_time) > 3:
-                progress_callback(percent)
-                return new_time
-            else:
+            if new_time - last_update_time <= 3:
                 return last_update_time
+            progress_callback(percent)
+            return new_time
 
         def download_files_to_managed_folder(folder_path, files_info, chunk_size=8192):
             total_size = 0

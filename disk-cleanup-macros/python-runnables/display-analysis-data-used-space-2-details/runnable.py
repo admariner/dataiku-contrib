@@ -22,7 +22,7 @@ class CheckAnalysisDataRunnable(Runnable):
     def run(self, progress_callback):
         dip_home = os.environ["DIP_HOME"]
         config_home = os.path.join(dip_home, "config")
-        
+
         analysis_data_folder = os.path.join(dip_home, "analysis-data")
 
         rt = ResultTable()
@@ -33,25 +33,30 @@ class CheckAnalysisDataRunnable(Runnable):
         rt.add_column("model", "Model", "STRING")
         rt.add_column("used", "Disk space used", "STRING")
         rt.add_column("path", "Path", "STRING")
- 
+
         for project_key in os.listdir(analysis_data_folder):
             analysis_data_project_folder = os.path.join(analysis_data_folder, project_key)
             if not os.path.isdir(analysis_data_project_folder):
                 continue
-                
+
             project_folder = os.path.join(config_home, "projects", project_key)
             orphaned_project = not os.path.isdir(project_folder)
-            
+
             for analysis_id in os.listdir(analysis_data_project_folder):
                 analysis_data_analysis_folder = os.path.join(analysis_data_project_folder, analysis_id)
                 if not os.path.isdir(analysis_data_analysis_folder):
                     continue
-                
+
                 analysis_folder = os.path.join(project_folder, "analysis", analysis_id)
-                orphaned_analysis = not os.path.isdir(analysis_folder) if not orphaned_project else None
+                orphaned_analysis = (
+                    None
+                    if orphaned_project
+                    else not os.path.isdir(analysis_folder)
+                )
+
 
                 total_used = 0
-                
+
                 model_records = []
                 for model_id in os.listdir(analysis_data_analysis_folder):
                     analysis_data_model_folder = os.path.join(analysis_data_analysis_folder, model_id)
@@ -66,7 +71,7 @@ class CheckAnalysisDataRunnable(Runnable):
                         total_used += used
                     except:
                         used = None
-                        
+
                     try:
                         core_params_file = os.path.join(analysis_folder, "core_params.json")
                         if os.path.isfile(core_params_file):
@@ -80,7 +85,7 @@ class CheckAnalysisDataRunnable(Runnable):
                     except:
                         dataset_name = None
                         analysis_name = None
-                    
+
                     try:
                         model_params_file = os.path.join(model_folder, "params.json")
                         if os.path.isfile(model_params_file):
@@ -91,18 +96,18 @@ class CheckAnalysisDataRunnable(Runnable):
                             model_name = None
                     except:
                         model_name = None
-                    
+
                     record = []
-                    
+
                     # 0
                     if orphaned_project:
                         record.append('(orphaned)')
                     else:
                         record.append(project_key)
-                    
+
                     # 1
                     record.append(dataset_name)
-                    
+
                     # 2
                     if orphaned_analysis:
                         record.append('(orphaned)')
@@ -118,24 +123,24 @@ class CheckAnalysisDataRunnable(Runnable):
                         record.append(model_name)
                     else:
                         record.append(model_id)
-                    
+
                     # 4
                     if used is None:
                         record.append('N/A')
                     elif used < 1024:
-                        record.append('%s b' % used)
+                        record.append(f'{used} b')
                     elif used < 1024 * 1024:
-                        record.append('%s Kb' % int(used/1024))
+                        record.append(f'{int(used/1024)} Kb')
                     elif used < 1024 * 1024 * 1024:
-                        record.append('%s Mb' % int(used/(1024*1024)))
+                        record.append(f'{int(used/(1024*1024))} Mb')
                     else:
-                        record.append('%s Gb' % int(used/(1024*1024*1024)))
-                    
+                        record.append(f'{int(used/(1024*1024*1024))} Gb')
+
                     # 5
                     record.append(analysis_data_model_folder)
-                    
+
                     model_records.append(record)
-                    
+
                 record = []
 
                 # 0
@@ -154,7 +159,7 @@ class CheckAnalysisDataRunnable(Runnable):
                     record.append(analysis_name)
                 else:
                     record.append(analysis_id)
-                
+
                 # 3
                 record.append(None)
 
@@ -162,13 +167,13 @@ class CheckAnalysisDataRunnable(Runnable):
                 if total_used is None:
                     record.append('N/A')
                 elif total_used < 1024:
-                    record.append('%s b' % used)
+                    record.append(f'{used} b')
                 elif total_used < 1024 * 1024:
-                    record.append('%s Kb' % int(total_used/1024))
+                    record.append(f'{int(total_used/1024)} Kb')
                 elif total_used < 1024 * 1024 * 1024:
-                    record.append('%s Mb' % int(total_used/(1024*1024)))
+                    record.append(f'{int(total_used/(1024*1024))} Mb')
                 else:
-                    record.append('%s Gb' % int(total_used/(1024*1024*1024)))
+                    record.append(f'{int(total_used/(1024*1024*1024))} Gb')
 
                 # 5
                 record.append(analysis_data_analysis_folder)
@@ -176,41 +181,38 @@ class CheckAnalysisDataRunnable(Runnable):
                 rt.add_record(record)
                 for model_record in model_records:
                     rt.add_record(model_record)
-                    
-                    
+
+
         table_rows = []
-        idx = 0
-        for record in rt.records:
+        for idx, record in enumerate(rt.records):
             analysis_row = record[3] is None
 
             row_cells = []
-            for i in range(0, 6):
+            for i in range(6):
                 if analysis_row and i == 3:
                     continue
                 value = record[i]
-                if value is not None:
-                    if i == 5:
-                        show_path_var = "showPath%s" % idx
-                        row_cells.append('<td class="mx-textellipsis" title="%s"><a class="mx-link-nodecoration" href="" ng-click="%s = !%s"><i class="icon-eye"></i></a></td>' % (value, show_path_var, show_path_var))
-                    else:
-                        row_cells.append('<td class="mx-textellipsis" title="%s" %s>%s</td>' % (value, (' colspan="2"' if analysis_row and i == 2 else ''), value))
-                else:
+                if value is None:
                     row_cells.append('<td></td>')
-                    
+
+                elif i == 5:
+                    show_path_var = f"showPath{idx}"
+                    row_cells.append('<td class="mx-textellipsis" title="%s"><a class="mx-link-nodecoration" href="" ng-click="%s = !%s"><i class="icon-eye"></i></a></td>' % (value, show_path_var, show_path_var))
+                else:
+                    row_cells.append('<td class="mx-textellipsis" title="%s" %s>%s</td>' % (value, (' colspan="2"' if analysis_row and i == 2 else ''), value))
             if analysis_row:
                 # analysis row
                 table_rows.append('<tr style="font-weight: bold;">%s</tr>' % (''.join(row_cells)))
             else:
                 # model row
-                table_rows.append('<tr>%s</tr>' % (''.join(row_cells)))
+                table_rows.append(f"<tr>{''.join(row_cells)}</tr>")
             path_cell_style = 'white-space: nowrap; padding-left: 20px; font-family: monospace; font-size: 11px;'
             if analysis_row:
-                path_cell_style = path_cell_style + '; font-weight: bold'
+                path_cell_style += '; font-weight: bold'
             table_rows.append('<tr ng-if="%s"><td colspan="6" title="%s" style="%s">%s</td></tr>' % (show_path_var, record[5], path_cell_style, record[5]))
-            idx += 1
-                
         html = '<div>'
-        table_header = '<th>%s</th>' % ('</th><th>'.join(['Project', 'Dataset', 'Analysis', 'Model', 'Disk usage', 'Path']))
+        table_header = f"<th>{'</th><th>'.join(['Project', 'Dataset', 'Analysis', 'Model', 'Disk usage', 'Path'])}</th>"
+
         html += '<table class="table table-striped" style="table-layout: fixed;">%s%s</table>' % (table_header, ''.join(table_rows))
         html += '</div>'
         return html

@@ -23,7 +23,7 @@ class MyRunnable(Runnable):
         projects_analyses = {}
 
         if self.config.get('allProjects', False):
-            projects = [project_key for project_key in os.listdir(analysis_data)]
+            projects = list(os.listdir(analysis_data))
         else:
             projects = [self.project_key]
 
@@ -59,7 +59,7 @@ class MyRunnable(Runnable):
 
                 analyses_splits[(project, analysis)] = analysis_splits
                 analyses_sessions[(project, analysis)] = analysis_sessions
-        
+
             projects_sessions[project] = project_sessions
             projects_splits[project] = project_splits
 
@@ -74,13 +74,15 @@ class MyRunnable(Runnable):
 
             for project in projects:
                 total = (projects_sessions[project] + projects_splits[project])
-                if len(projects) > 0 and total == 0:
+                if projects and total == 0:
                     continue
-                record = []
-                record.append(project)
-                record.append(total / 1024)
-                record.append(projects_sessions[project] / 1024)
-                record.append(projects_splits[project] / 1024)
+                record = [
+                    project,
+                    total / 1024,
+                    projects_sessions[project] / 1024,
+                    projects_splits[project] / 1024,
+                ]
+
                 rt.add_record(record)
         else:
             rt.add_column("project", "Project key", "STRING")
@@ -91,12 +93,18 @@ class MyRunnable(Runnable):
 
             for project in projects:
                 for analysis in projects_analyses[project]:
-                    record = []
-                    record.append(project)
-                    record.append(analysis)
-                    record.append((analyses_sessions[(project, analysis)]+analyses_splits[(project, analysis)])/ 1024)
-                    record.append(analyses_sessions[(project, analysis)] / 1024)
-                    record.append(analyses_splits[(project, analysis)] / 1024)
+                    record = [
+                        project,
+                        analysis,
+                        (
+                            analyses_sessions[(project, analysis)]
+                            + analyses_splits[(project, analysis)]
+                        )
+                        / 1024,
+                        analyses_sessions[(project, analysis)] / 1024,
+                        analyses_splits[(project, analysis)] / 1024,
+                    ]
+
                     rt.add_record(record)
 
         return rt

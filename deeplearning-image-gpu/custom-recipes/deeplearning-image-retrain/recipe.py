@@ -105,17 +105,17 @@ def load_model_and_apply_recipe_params(model_folder_path, input_shape, n_classes
 
     # CHOOSING LAYER TO RETRAIN
     layer_to_retrain = recipe_config["layer_to_retrain"]
-    print("Will Retrain layer(s) with mode: {}".format(layer_to_retrain))
+    print(f"Will Retrain layer(s) with mode: {layer_to_retrain}")
     if layer_to_retrain == "all" :
         for lay in model.layers :
             lay.trainable = True
-            
+
     elif layer_to_retrain == "last" :
         for lay in model.layers[:-1] :
             lay.trainable = False
         lay = model.layers[-1]
         lay.trainable = True
-        
+
     elif layer_to_retrain == "n_last" :
         n_last = int(recipe_config["layer_to_retrain_n"])
         for lay in model.layers[:-n_last] :
@@ -165,7 +165,7 @@ def augmentation_generator(df_imgs, image_folder_path, batch_size, n_augmentatio
                 img_path = utils.get_file_path(image_folder_path, img_filename)
                 label = row[constants.LABEL]
                 label_index = labels.index(label)
-                
+
                 try: 
                     x = utils.preprocess_img(img_path, input_shape, preprocessing)
                     x = np.tile(x, (n_augmentation, 1, 1, 1))
@@ -176,7 +176,7 @@ def augmentation_generator(df_imgs, image_folder_path, batch_size, n_augmentatio
                         y_batch_list.extend([label_index] * n_augmentation)
                         break
                 except IOError as e:
-                    print("Cannot read the image '{}', skipping it. Error: {}".format(img_filename, e))
+                    print(f"Cannot read the image '{img_filename}', skipping it. Error: {e}")
 
             X_batch = np.concatenate(X_batch_list)
 
@@ -210,15 +210,15 @@ def no_augmentation_generator(df_imgs, image_folder_path, batch_size, input_shap
                 img_path = utils.get_file_path(image_folder_path, img_filename)
                 label = row[constants.LABEL]
                 label_index = labels.index(label)
-                try :
+                try:
                     x = utils.preprocess_img(img_path, input_shape, preprocessing)
                     X_batch_list.append(x)
                     y_batch_list.append(label_index)
                 except IOError as e:
-                    print("Cannot read the image '{}', skipping it. Error: {}".format(img_filename, e))
+                    print(f"Cannot read the image '{img_filename}', skipping it. Error: {e}")
 
             X_batch = np.array(X_batch_list)
-            
+
             actual_batch_size = X_batch.shape[0]
             y_batch = np.zeros((actual_batch_size, n_classes))
             y_batch[range(actual_batch_size), y_batch_list] = 1
@@ -241,10 +241,10 @@ test_generator = no_augmentation_generator(df_test, image_folder_path, batch_siz
 ###################################################################################################################
 
 
-if optimizer == "adam":
-    model_opti_class = optimizers.Adam
-elif optimizer == "adagrad":
+if optimizer == "adagrad":
     model_opti_class = optimizers.Adagrad
+elif optimizer == "adam":
+    model_opti_class = optimizers.Adam
 elif optimizer == "sgd":
     model_opti_class = optimizers.SGD
 
@@ -254,8 +254,6 @@ params_opti["lr"] = learning_rate
 
 model_opti = model_opti_class(**params_opti)
 model.compile(optimizer=model_opti, loss='categorical_crossentropy',metrics=['accuracy'])
-
-callback_list = []
 
 ###################################################################################################################
 ## BUILD MODEL CHECKPOINT
@@ -269,8 +267,7 @@ if should_use_gpu and n_gpu > 1:
 else:
     mcheck = ModelCheckpoint(model_weights_path, monitor="val_loss", save_best_only=True, save_weights_only=should_save_weights_only)
 
-callback_list.append(mcheck)
-
+callback_list = [mcheck]
 ###################################################################################################################
 ## TENSORBOARD
 ###################################################################################################################

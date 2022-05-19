@@ -27,7 +27,7 @@ class TopPerDayConnector(Connector):
         cur_date = beg_date
         while cur_date < end_date:
             for project in projects:
-                logger.info("Query for %s : %s" % (cur_date, project))
+                logger.info(f"Query for {cur_date} : {project}")
                 resp = dkuwikipedia.query_top(project, cur_date)
                 dic = resp.json()
                 for item in dic.get("items", [{"articles": []}])[0]["articles"]:

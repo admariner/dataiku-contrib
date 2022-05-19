@@ -108,10 +108,10 @@ class CocoDataset(utils.Dataset):
         if auto_download is True:
             self.auto_download(dataset_dir, subset, year)
 
-        coco = COCO("{}/annotations/instances_{}{}.json".format(dataset_dir, subset, year))
-        if subset == "minival" or subset == "valminusminival":
+        coco = COCO(f"{dataset_dir}/annotations/instances_{subset}{year}.json")
+        if subset in ["minival", "valminusminival"]:
             subset = "val"
-        image_dir = "{}/{}{}".format(dataset_dir, subset, year)
+        image_dir = f"{dataset_dir}/{subset}{year}"
 
         # Load all classes or a subset?
         if not class_ids:
@@ -156,14 +156,14 @@ class CocoDataset(utils.Dataset):
         """
 
         # Setup paths and file names
-        if dataType == "minival" or dataType == "valminusminival":
-            imgDir = "{}/{}{}".format(dataDir, "val", dataYear)
-            imgZipFile = "{}/{}{}.zip".format(dataDir, "val", dataYear)
-            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format("val", dataYear)
+        if dataType in ["minival", "valminusminival"]:
+            imgDir = f"{dataDir}/val{dataYear}"
+            imgZipFile = f"{dataDir}/val{dataYear}.zip"
+            imgURL = f"http://images.cocodataset.org/zips/val{dataYear}.zip"
         else:
-            imgDir = "{}/{}{}".format(dataDir, dataType, dataYear)
-            imgZipFile = "{}/{}{}.zip".format(dataDir, dataType, dataYear)
-            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format(dataType, dataYear)
+            imgDir = f"{dataDir}/{dataType}{dataYear}"
+            imgZipFile = f"{dataDir}/{dataType}{dataYear}.zip"
+            imgURL = f"http://images.cocodataset.org/zips/{dataType}{dataYear}.zip"
         # print("Image paths:"); print(imgDir); print(imgZipFile); print(imgURL)
 
         # Create main folder if it doesn't exist yet
@@ -173,32 +173,33 @@ class CocoDataset(utils.Dataset):
         # Download images if not available locally
         if not os.path.exists(imgDir):
             os.makedirs(imgDir)
-            print("Downloading images to " + imgZipFile + " ...")
+            print(f"Downloading images to {imgZipFile} ...")
             with urllib.request.urlopen(imgURL) as resp, open(imgZipFile, 'wb') as out:
                 shutil.copyfileobj(resp, out)
             print("... done downloading.")
-            print("Unzipping " + imgZipFile)
+            print(f"Unzipping {imgZipFile}")
             with zipfile.ZipFile(imgZipFile, "r") as zip_ref:
                 zip_ref.extractall(dataDir)
             print("... done unzipping")
-        print("Will use images in " + imgDir)
+        print(f"Will use images in {imgDir}")
 
         # Setup annotations data paths
-        annDir = "{}/annotations".format(dataDir)
+        annDir = f"{dataDir}/annotations"
         if dataType == "minival":
-            annZipFile = "{}/instances_minival2014.json.zip".format(dataDir)
-            annFile = "{}/instances_minival2014.json".format(annDir)
+            annZipFile = f"{dataDir}/instances_minival2014.json.zip"
+            annFile = f"{annDir}/instances_minival2014.json"
             annURL = "https://dl.dropboxusercontent.com/s/o43o90bna78omob/instances_minival2014.json.zip?dl=0"
             unZipDir = annDir
         elif dataType == "valminusminival":
-            annZipFile = "{}/instances_valminusminival2014.json.zip".format(dataDir)
-            annFile = "{}/instances_valminusminival2014.json".format(annDir)
+            annZipFile = f"{dataDir}/instances_valminusminival2014.json.zip"
+            annFile = f"{annDir}/instances_valminusminival2014.json"
             annURL = "https://dl.dropboxusercontent.com/s/s3tw5zcg7395368/instances_valminusminival2014.json.zip?dl=0"
             unZipDir = annDir
         else:
-            annZipFile = "{}/annotations_trainval{}.zip".format(dataDir, dataYear)
-            annFile = "{}/instances_{}{}.json".format(annDir, dataType, dataYear)
-            annURL = "http://images.cocodataset.org/annotations/annotations_trainval{}.zip".format(dataYear)
+            annZipFile = f"{dataDir}/annotations_trainval{dataYear}.zip"
+            annFile = f"{annDir}/instances_{dataType}{dataYear}.json"
+            annURL = f"http://images.cocodataset.org/annotations/annotations_trainval{dataYear}.zip"
+
             unZipDir = dataDir
         # print("Annotations paths:"); print(annDir); print(annFile); print(annZipFile); print(annURL)
 
@@ -207,15 +208,15 @@ class CocoDataset(utils.Dataset):
             os.makedirs(annDir)
         if not os.path.exists(annFile):
             if not os.path.exists(annZipFile):
-                print("Downloading zipped annotations to " + annZipFile + " ...")
+                print(f"Downloading zipped annotations to {annZipFile} ...")
                 with urllib.request.urlopen(annURL) as resp, open(annZipFile, 'wb') as out:
                     shutil.copyfileobj(resp, out)
                 print("... done downloading.")
-            print("Unzipping " + annZipFile)
+            print(f"Unzipping {annZipFile}")
             with zipfile.ZipFile(annZipFile, "r") as zip_ref:
                 zip_ref.extractall(unZipDir)
             print("... done unzipping")
-        print("Will use annotations in " + annFile)
+        print(f"Will use annotations in {annFile}")
 
     def load_mask(self, image_id):
         """Load instance masks for the given image.
@@ -240,9 +241,9 @@ class CocoDataset(utils.Dataset):
         # Build mask of shape [height, width, instance_count] and list
         # of class IDs that correspond to each channel of the mask.
         for annotation in annotations:
-            class_id = self.map_source_class_id(
-                "coco.{}".format(annotation['category_id']))
-            if class_id:
+            if class_id := self.map_source_class_id(
+                f"coco.{annotation['category_id']}"
+            ):
                 m = self.annToMask(annotation, image_info["height"],
                                    image_info["width"])
                 # Some objects are so small that they're less than 1 pixel area
@@ -260,20 +261,18 @@ class CocoDataset(utils.Dataset):
                 instance_masks.append(m)
                 class_ids.append(class_id)
 
-        # Pack instance masks into an array
-        if class_ids:
-            mask = np.stack(instance_masks, axis=2).astype(np.bool)
-            class_ids = np.array(class_ids, dtype=np.int32)
-            return mask, class_ids
-        else:
+        if not class_ids:
             # Call super class to return an empty mask
             return super(CocoDataset, self).load_mask(image_id)
+        mask = np.stack(instance_masks, axis=2).astype(np.bool)
+        class_ids = np.array(class_ids, dtype=np.int32)
+        return mask, class_ids
 
     def image_reference(self, image_id):
         """Return a link to the image in the COCO Website."""
         info = self.image_info[image_id]
         if info["source"] == "coco":
-            return "http://cocodataset.org/#explore?id={}".format(info["id"])
+            return f'http://cocodataset.org/#explore?id={info["id"]}'
         else:
             super(CocoDataset, self).image_reference(image_id)
 
@@ -289,14 +288,12 @@ class CocoDataset(utils.Dataset):
             # polygon -- a single object might consist of multiple parts
             # we merge all parts into one mask rle code
             rles = maskUtils.frPyObjects(segm, height, width)
-            rle = maskUtils.merge(rles)
+            return maskUtils.merge(rles)
         elif isinstance(segm['counts'], list):
             # uncompressed RLE
-            rle = maskUtils.frPyObjects(segm, height, width)
+            return maskUtils.frPyObjects(segm, height, width)
         else:
-            # rle
-            rle = ann['segmentation']
-        return rle
+            return segm
 
     def annToMask(self, ann, height, width):
         """
@@ -304,8 +301,7 @@ class CocoDataset(utils.Dataset):
         :return: binary mask (numpy 2D array)
         """
         rle = self.annToRLE(ann, height, width)
-        m = maskUtils.decode(rle)
-        return m
+        return maskUtils.decode(rle)
 
 
 ############################################################
@@ -386,8 +382,10 @@ def evaluate_coco(model, dataset, coco, eval_type="bbox", limit=0, image_ids=Non
     cocoEval.accumulate()
     cocoEval.summarize()
 
-    print("Prediction time: {}. Average {}/image".format(
-        t_prediction, t_prediction / len(image_ids)))
+    print(
+        f"Prediction time: {t_prediction}. Average {t_prediction / len(image_ids)}/image"
+    )
+
     print("Total time: ", time.time() - t_start)
 
 
@@ -527,8 +525,7 @@ if __name__ == '__main__':
         val_type = "val" if args.year in '2017' else "minival"
         coco = dataset_val.load_coco(args.dataset, val_type, year=args.year, return_coco=True, auto_download=args.download)
         dataset_val.prepare()
-        print("Running COCO evaluation on {} images.".format(args.limit))
+        print(f"Running COCO evaluation on {args.limit} images.")
         evaluate_coco(model, dataset_val, coco, "bbox", limit=int(args.limit))
     else:
-        print("'{}' is not recognized. "
-              "Use 'train' or 'evaluate'".format(args.command))
+        print(f"'{args.command}' is not recognized. Use 'train' or 'evaluate'")

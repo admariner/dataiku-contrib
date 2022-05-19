@@ -44,8 +44,7 @@ def DSS_dataset_to_H2O_frame(dataset_name):   #, partition_id = None
 
 def saved_model_folder(model_config, output_folder):
     """Return the path of a folder to save/retrieve the H2O model."""
-    if model_config['input_type'] == 'HDFS':
-        HDFS_models_path = get_plugin_config().get('hdfs_models_path')
-        return 'hdfs://' + os.path.join(HDFS_models_path, output_folder.full_name)
-    else:
+    if model_config['input_type'] != 'HDFS':
         return os.path.join(output_folder.get_path(), 'saved_model/')
+    HDFS_models_path = get_plugin_config().get('hdfs_models_path')
+    return 'hdfs://' + os.path.join(HDFS_models_path, output_folder.full_name)

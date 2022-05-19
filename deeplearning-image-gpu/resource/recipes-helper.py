@@ -55,14 +55,11 @@ def get_info_retrain(inputs):
 def get_model_folder_path(inputs):
     # Retrieving model folder
     model_folder_full_name = get_input_name_from_role(inputs, "model_folder")
-    model_folder = dataiku.Folder(model_folder_full_name).get_path()
-
-    return model_folder
+    return dataiku.Folder(model_folder_full_name).get_path()
 
 def get_label_dataset(inputs):
     label_dataset_full_name = get_input_name_from_role(inputs, "label_dataset")
-    label_dataset = dataiku.Dataset(label_dataset_full_name)
-    return label_dataset
+    return dataiku.Dataset(label_dataset_full_name)
 
 def get_input_name_from_role(inputs, role):
     return [inp for inp in inputs if inp["role"] == role][0]["fullName"]

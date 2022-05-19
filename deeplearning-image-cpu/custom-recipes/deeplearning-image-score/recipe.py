@@ -65,10 +65,7 @@ def predict(limit = 5, min_threshold = 0):
     n = 0
     results = {"prediction": [], "error": []}
     num_images = len(images_paths)
-    while True:
-        if (n * batch_size) >= num_images:
-            break
-
+    while n * batch_size < num_images:
         next_batch_list = []
         error_indices = []
         for index_in_batch, i in enumerate(range(n*batch_size, min((n+1)*batch_size, num_images))):
@@ -77,7 +74,7 @@ def predict(limit = 5, min_threshold = 0):
                 preprocessed_img = utils.preprocess_img(utils.get_file_path(image_folder_path, img_path), model_input_shape, preprocessing)
                 next_batch_list.append(preprocessed_img)
             except IOError as e:
-                print("Cannot read the image '{}', skipping it. Error: {}".format(img_path, e))
+                print(f"Cannot read the image '{img_path}', skipping it. Error: {e}")
                 error_indices.append(index_in_batch)
         next_batch = np.array(next_batch_list)
 
@@ -87,7 +84,7 @@ def predict(limit = 5, min_threshold = 0):
         for err_index in error_indices:
             prediction_batch.insert(err_index, None)
             error_batch.insert(err_index, 1)
-        
+
         results["prediction"].extend(prediction_batch)
         results["error"].extend(error_batch)
         n+=1
@@ -106,7 +103,7 @@ print("------ \n Info: Finished predicting \n ------")
 # Prepare results
 output = pd.DataFrame()
 output["images"] = images_paths
-print("------->" + str(output))
+print(f"------->{str(output)}")
 output["prediction"] = predictions["prediction"]
 output["error"] = predictions["error"]
 

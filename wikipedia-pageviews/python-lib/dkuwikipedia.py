@@ -2,9 +2,9 @@ import dateutil.parser, datetime
 import requests
 
 def get_daterange(config):
-    beg_date_str = "%sT00:00:00Z" % config["begin_date"]
+    beg_date_str = f'{config["begin_date"]}T00:00:00Z'
     beg_date = dateutil.parser.parse(beg_date_str)
-    end_date_str = "%sT00:00:00Z" % config["end_date"]
+    end_date_str = f'{config["end_date"]}T00:00:00Z'
     end_date = dateutil.parser.parse(end_date_str)
     return (beg_date, end_date)
 
@@ -21,16 +21,16 @@ def _get_headers():
 def query_top(project, date):
     """Returns the Requests response"""
     return requests.get(
-        "https://wikimedia.org/api/rest_v1/metrics/pageviews/top/%s/all-access/%s/%s/%s" %
-            (project, date.strftime("%Y"), date.strftime("%m"), date.strftime("%d")),
-            headers = _get_headers())
+        f'https://wikimedia.org/api/rest_v1/metrics/pageviews/top/{project}/all-access/{date.strftime("%Y")}/{date.strftime("%m")}/{date.strftime("%d")}',
+        headers=_get_headers(),
+    )
 
 def query_page(project, page, beg_date, end_date):
     """Returns the Requests response"""
     return requests.get(
-        "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/%s/all-access/all-agents/%s/daily/%s/%s" %
-        (project, page, beg_date.strftime("%Y%m%d"), end_date.strftime("%Y%m%d")),
-            headers = _get_headers())
+        f'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{project}/all-access/all-agents/{page}/daily/{beg_date.strftime("%Y%m%d")}/{end_date.strftime("%Y%m%d")}',
+        headers=_get_headers(),
+    )
 
 def format_date(date):
     return date.strftime("%Y-%m-%dT%H:%M:%S.%fZ")

@@ -70,19 +70,17 @@ class LimePreprocessor(object):
         except:
             raise
 
-        #Sanity check
         if self.predictor.params.model_type != "PREDICTION":
             raise TypeError('Lime Preprocessor applies only to prediction models')
-        else:
-            if self.predictor.params.core_params[constants.PREDICTION_TYPE] == 'REGRESSION':
-                #TODO implement regression
-                raise NotImplementedError('Lime Preprocessor does not implement Regression')
-                
+        if self.predictor.params.core_params[constants.PREDICTION_TYPE] == 'REGRESSION':
+            #TODO implement regression
+            raise NotImplementedError('Lime Preprocessor does not implement Regression')
+
         self.classes = self.get_classes()
         #additional sanity check for multi-class
         if self.classes is None:
             raise ValueError('Predictor does not seem to be a classifier, no classes found')
-        
+
         #FIXME: hardcoded - anyway to retreive this dynamically?
         self.predictor_proba_fmt = 'proba_{}'
         
@@ -127,7 +125,10 @@ class LimePreprocessor(object):
             try:
                 return self.train_analysis_data['feature_order']
             except KeyError:
-                raise Exception('feature_order does not exists in train_analysis_data %s' % self.train_analysis_data.keys())
+                raise Exception(
+                    f'feature_order does not exists in train_analysis_data {self.train_analysis_data.keys()}'
+                )
+
             else:
                 raise
         else:
@@ -168,19 +169,19 @@ class LimePreprocessor(object):
     def generate_inverse_cat_feature(self, fname, num_samples):
         f_stats = self.get_feature_stats(fname)
         if f_stats is None:
-            raise ValueError('Feature %s not in model input feature list' % fname)
-        
+            raise ValueError(f'Feature {fname} not in model input feature list')
+
         total_count = f_stats['total_count']
         values, freqs = map(list,  zip(*[(k, float(v) / float(total_count) ) for k,v in f_stats['category_value_count']]))
-        inverse_column = self.random_state.choice(values, size=num_samples,
-                                                      replace=True, p=freqs)
-        return inverse_column
+        return self.random_state.choice(
+            values, size=num_samples, replace=True, p=freqs
+        )
     
     def generate_inverse_num_feature(self, fname, num_samples):
         f_stats = self.get_feature_stats(fname)
         if f_stats is None:
-            raise ValueError('Feature %s not in model input feature list' % fname)
-        
+            raise ValueError(f'Feature {fname} not in model input feature list')
+
         _mean = f_stats['stats']['average']
         _std = f_stats['stats']['std']
         _nulls = f_stats['nulls_count']
@@ -193,23 +194,29 @@ class LimePreprocessor(object):
         for f in inverse_df.columns.tolist():
             f_config = self.get_feature_config(f)
             if not f_config:
-                logger.warn('Feature %s does not exist in pre-processing params, skipping inversion' % f)
+                logger.warn(
+                    f'Feature {f} does not exist in pre-processing params, skipping inversion'
+                )
+
                 continue
 
             f_role = self.get_feature_role(f)
             f_type = self.get_feature_type(f)
 
             if f_role != 'INPUT':
-                logger.warn('Skipping feature %s because not an INPUT feature, its role is %s' % (f, f_role))
+                logger.warn(
+                    f'Skipping feature {f} because not an INPUT feature, its role is {f_role}'
+                )
+
                 continue
-                
+
             if f_type == 'NUMERIC':
                 inverse_df[f] = self.generate_inverse_num_feature(f, num_samples)
             elif f_type == 'CATEGORY':
                 inverse_df[f] = self.generate_inverse_cat_feature(f, num_samples)
             else:
-                raise ValueError('Unknown feature type %s for feature %s' % (f_type, f))
-                
+                raise ValueError(f'Unknown feature type {f_type} for feature {f}')
+
         return inverse_df
 
     def generate_samples(self, num_samples):
@@ -266,14 +273,12 @@ class LimePreprocessor(object):
         
         if version_id is None:
             version_id = [x for x in self.saved_model.list_versions() if x["active"]][0]["versionId"]
-            
+
         res = backend_json_call("savedmodels/get-model-details", data={
             "projectKey": self.project_key,
             "smId": self.saved_model.get_id(),
             "versionId": version_id
         })
-        
-        model_folder = res["model_folder"]
 
-        return model_folder
+        return res["model_folder"]
             

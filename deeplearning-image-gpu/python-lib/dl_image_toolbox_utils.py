@@ -91,9 +91,7 @@ def get_weights_urls(architecture, trained_on):
         return {}
 
 def should_save_weights_only(config):
-    if config["architecture"] in keras_applications.keys():
-        return True
-    return False
+    return config["architecture"] in keras_applications.keys()
 
 ###############################################################
 ## EXTRACT INFO FROM MODEL (SUMMARY AND LAYERS)
@@ -103,19 +101,18 @@ def get_model_input_shape(model, mf_path):
 
     input_shape = model.input_shape[1:3]
 
-    # Check that model has an actual input shape
-    if input_shape[0] == None or input_shape[1] == None:
-        
-        config = get_config(mf_path)
-        architecture = config["architecture"]
-
-        if not is_keras_application(architecture):
-            raise IOError("You must provide an input shape for your architecture '{}'".format(architecture))
-
-        return keras_applications[architecture].get("input_shape", (224, 224))
-
-    else:
+    if input_shape[0] is not None and input_shape[1] is not None:
         return input_shape
+    config = get_config(mf_path)
+    architecture = config["architecture"]
+
+    if not is_keras_application(architecture):
+        raise IOError(
+            f"You must provide an input shape for your architecture '{architecture}'"
+        )
+
+
+    return keras_applications[architecture].get("input_shape", (224, 224))
 
 
 def get_layers_as_list(model):
@@ -128,10 +125,10 @@ def get_model_summary(model):
     return summary_io.getvalue()
 
 def save_model_info(mf_path):
-    model_info = {}
+    model_info = {
+        constants.SCORING: compute_model_info(mf_path, constants.SCORING)
+    }
 
-    # For SCORING
-    model_info[constants.SCORING] = compute_model_info(mf_path, constants.SCORING)
 
     # For BEFORE_TRAIN
     model_info[constants.BEFORE_TRAIN] = compute_model_info(mf_path, constants.BEFORE_TRAIN)
@@ -141,11 +138,10 @@ def save_model_info(mf_path):
 
 def get_model_info(mf_path, goal):
 
-    if os.path.isfile(get_file_path(mf_path, constants.MODEL_INFO_FILE)):
-        model_info = json.loads(open(get_file_path(mf_path, constants.MODEL_INFO_FILE)).read())
-        return model_info[goal]
-    else:
+    if not os.path.isfile(get_file_path(mf_path, constants.MODEL_INFO_FILE)):
         return compute_model_info(mf_path, goal)
+    model_info = json.loads(open(get_file_path(mf_path, constants.MODEL_INFO_FILE)).read())
+    return model_info[goal]
 
 def compute_model_info(mf_path, goal):
     model_info = {}
@@ -197,34 +193,34 @@ def load_keras_application(config, mf_path, goal, input_shape, pooling, reg, dro
     model_params = {}
 
     if trained_on != constants.IMAGENET:
-        raise IOError("The architecture '{}', trained on '{}' cannot be found".format(architecture, trained_on))
+        raise IOError(
+            f"The architecture '{architecture}', trained on '{trained_on}' cannot be found"
+        )
+
 
     if retrained and top_params is None:
-        raise IOError("Your config file is missing some parameters : '{}'".format(constants.TOP_PARAMS))
+        raise IOError(
+            f"Your config file is missing some parameters : '{constants.TOP_PARAMS}'"
+        )
+
 
     if goal == constants.SCORING:
 
-        if not retrained:
-            
-            if top_params is None:
-
-                model = keras_applications[architecture]["model_func"](weights=None, include_top=True)
-                model_weights_path = get_weights_path(mf_path, config)
-                model.load_weights(model_weights_path)
-
-            else:
-
-                model = keras_applications[architecture]["model_func"](weights=None, include_top=False, input_shape=top_params["input_shape"])
-                model, model_params = enrich_model(model, pooling, dropout, reg, n_classes, top_params, verbose)
-                model_weights_path = get_weights_path(mf_path, config, constants.CUSTOM_TOP_SUFFIX)
-                model.load_weights(model_weights_path)
-
-        else:
+        if retrained:
 
             model = keras_applications[architecture]["model_func"](weights=None, include_top=False, input_shape=top_params["input_shape"])
             model, model_params = enrich_model(model, pooling, dropout, reg, n_classes, top_params, verbose)
             model_weights_path = get_weights_path(mf_path, config, constants.RETRAINED_SUFFIX)
-            model.load_weights(model_weights_path)
+        elif top_params is None:
+
+            model = keras_applications[architecture]["model_func"](weights=None, include_top=True)
+            model_weights_path = get_weights_path(mf_path, config)
+        else:
+
+            model = keras_applications[architecture]["model_func"](weights=None, include_top=False, input_shape=top_params["input_shape"])
+            model, model_params = enrich_model(model, pooling, dropout, reg, n_classes, top_params, verbose)
+            model_weights_path = get_weights_path(mf_path, config, constants.CUSTOM_TOP_SUFFIX)
+        model.load_weights(model_weights_path)
 
     elif goal == constants.RETRAINING:
 
@@ -249,14 +245,12 @@ def load_keras_application(config, mf_path, goal, input_shape, pooling, reg, dro
 
             model = keras_applications[architecture]["model_func"](weights=None, include_top=False, input_shape=input_shape)
             model_weights_path = get_weights_path(mf_path, config, constants.NOTOP_SUFFIX)
-            model.load_weights(model_weights_path)
-
         else:
 
             model = keras_applications[architecture]["model_func"](weights=None, include_top=False, input_shape=top_params["input_shape"])
             model, model_params = enrich_model(model, pooling, dropout, reg, n_classes, top_params, verbose)
             model_weights_path = get_weights_path(mf_path, config, constants.RETRAINED_SUFFIX)
-            model.load_weights(model_weights_path)
+        model.load_weights(model_weights_path)
 
     return {"model": model, "preprocessing": keras_applications[architecture]["preprocessing"], "model_params": model_params}
 
@@ -267,13 +261,13 @@ def enrich_model(base_model, pooling, dropout, reg, n_classes, params, verbose):
 
     # Init params if not done before
     params = {} if params is None else params
-    
+
     # Loading appropriate params
     params["pooling"] = select_param("pooling", pooling, params)
     params["n_classes"] = select_param("n_classes", n_classes, params)
 
     x = base_model.layers[-1].output
-        
+
     if params["pooling"] == 'None' :
         x = Flatten()(x)
     elif params["pooling"] == 'avg' :
@@ -281,10 +275,10 @@ def enrich_model(base_model, pooling, dropout, reg, n_classes, params, verbose):
     elif params["pooling"] == 'max' :
         x = GlobalMaxPooling2D()(x)
 
-    if dropout is not None and dropout != 0.0 :
+    if dropout is not None and dropout != 0.0:
         x = Dropout(dropout)(x)
         if verbose:
-            print("Adding dropout to model with rate: {}".format(dropout))
+            print(f"Adding dropout to model with rate: {dropout}")
 
     regularizer = None
     if reg is not None:
@@ -297,8 +291,8 @@ def enrich_model(base_model, pooling, dropout, reg, n_classes, params, verbose):
         if (reg_l1 != 0.0) and (reg_l2 == 0.0) :
             regularizer = regularizers.l1(reg_l1)
         if verbose:
-            print("Using regularizer for model: {}".format(reg))
-    
+            print(f"Using regularizer for model: {reg}")
+
     predictions = Dense(params["n_classes"], activation='softmax', name='predictions', kernel_regularizer=regularizer)(x)
     model = Model(input=base_model.input, output=predictions)
 
@@ -351,7 +345,7 @@ def get_weights_path(mf_path, config, suffix="", should_exist=True):
     return model_weights_path
 
 def get_weights_filename(mf_path, config, suffix=""):
-    return "{}_{}_weights{}.h5".format(config["architecture"], config["trained_on"], suffix)
+    return f'{config["architecture"]}_{config["trained_on"]}_weights{suffix}.h5'
 
 def get_config(mf_path):
     return json.loads(open(get_file_path(mf_path, constants.CONFIG_FILE)).read())
@@ -366,21 +360,20 @@ def check_managed_folder_filesystem(managed_folder):
     managed_folder_name = managed_folder_info["name"]
     connection_type = managed_folder_info["type"]
 
-    if connection_type != "Filesystem" :
-        raise IOError("The managed folder '{}' has a '{}' connection. Only Filesystem based managed folders are supported.".format(managed_folder_name, connection_type))
+    if connection_type != "Filesystem":
+        raise IOError(
+            f"The managed folder '{managed_folder_name}' has a '{connection_type}' connection. Only Filesystem based managed folders are supported."
+        )
 
 def get_file_path(folder_path, file_name):
     # Be careful to enforce that folder_path and file_name are actually strings
     return os.path.join(safe_str(folder_path), safe_str(file_name))
 
 def safe_str(val):
-    if sys.version_info > (3, 0):
-        return str(val)
+    if sys.version_info <= (3, 0) and isinstance(val, unicode):
+        return val.encode("utf-8")
     else:
-        if isinstance(val, unicode):
-            return val.encode("utf-8")
-        else:
-            return str(val)
+        return str(val)
 
 ###################################################################################################################
 ## MISC.
@@ -389,10 +382,7 @@ def safe_str(val):
 def get_predictions(model, batch, limit=5, min_threshold=0, labels_df=None):
     predictions = model.predict(batch)
     def id_pred(index):
-        if labels_df is not None:
-            return labels_df.loc[index].className
-        else:
-            return str(index)
+        return labels_df.loc[index].className if labels_df is not None else str(index)
     return [get_ordered_dict({id_pred(i): float(prediction[i]) for i in prediction.argsort()[-limit:] if float(prediction[i]) >= min_threshold}) for prediction in predictions]
 
 def get_ordered_dict(predictions):

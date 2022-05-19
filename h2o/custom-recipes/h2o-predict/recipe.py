@@ -27,9 +27,13 @@ for col in model_config['factor_columns']:
 def find_model_id(folder):
     with open(os.path.join(folder.get_path(), 'model_summary.txt')) as file:
         for line in file:
-            match = re.match('Model Key:  (DSS\.H2O_connector\.model\.'+folder.full_name+'\..*)$', line)
-            if match:
-                return match.group(1)
+            if match := re.match(
+                'Model Key:  (DSS\.H2O_connector\.model\.'
+                + folder.full_name
+                + '\..*)$',
+                line,
+            ):
+                return match[1]
     raise Exception('Could not find model id in model_summary.txt')
 
 model_id = find_model_id(input_folder)

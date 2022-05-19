@@ -39,10 +39,12 @@ class TensorboardThread(Thread):
                 break
 
         if not folder_found:
-            raise DataikuException("The folder '{}' (in project '{}' cannot be found".format(self.folder_name, self.project_key))
+            raise DataikuException(
+                f"The folder '{self.folder_name}' (in project '{self.project_key}' cannot be found"
+            )
 
-        log_path = os.path.join(folder_path, constants.TENSORBOARD_LOGS)
-        return log_path
+
+        return os.path.join(folder_path, constants.TENSORBOARD_LOGS)
 
     def __get_tb_app(self, tensorboard_logs):
         return application.standard_tensorboard_wsgi(
@@ -54,7 +56,10 @@ class TensorboardThread(Thread):
 
     def run(self):
         print("Launching tensorboard :")
-        print("Your tensorboard dashboard will be accessible on http://<SERVER ADDRESS>:{}".format(self.get_port()))
+        print(
+            f"Your tensorboard dashboard will be accessible on http://<SERVER ADDRESS>:{self.get_port()}"
+        )
+
         self.srv.serve_forever()
 
     def stop(self):

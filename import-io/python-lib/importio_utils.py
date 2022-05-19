@@ -27,8 +27,11 @@ def convert_schema(import_io_schema):
         result.append({
             'name':col['name'],
             'type':convert_type(col['type'])})
-        for subfield in importIO_subfields[col['type']]:
-            result.append({'name':col['name']+'/'+subfield, 'type':'string'})
+        result.extend(
+            {'name': col['name'] + '/' + subfield, 'type': 'string'}
+            for subfield in importIO_subfields[col['type']]
+        )
+
     return result
 
 def run(build_query):

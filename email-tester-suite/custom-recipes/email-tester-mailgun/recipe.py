@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format='email-tester-mailgun plugin - %(
 
 # Plugin version
 PLUGIN_VERSION = '0.0.1'
-logging.info('version: %s' % PLUGIN_VERSION)
+logging.info(f'version: {PLUGIN_VERSION}')
 
 # Get handles on datasets
 contacts = dataiku.Dataset(get_input_names_for_role('contacts')[0])
@@ -31,8 +31,13 @@ if not email_column or not cache_folder or not api_key:
 
 # Prepare schema
 output_schema = list(contacts.read_schema())
-output_schema.append({'name':'email_is_valid', 'type':'string'})
-output_schema.append({'name':'email_mailgun_details', 'type':'string'})
+output_schema.extend(
+    (
+        {'name': 'email_is_valid', 'type': 'string'},
+        {'name': 'email_mailgun_details', 'type': 'string'},
+    )
+)
+
 output.write_schema(output_schema)
 
 # Verification of the email column
@@ -52,8 +57,8 @@ filename = 'email-tester-mailgun-cache'
 cache_file = os.path.join(cache_folder, filename)
 cache = shelve.open(cache_file, writeback = True)
 cache_plugin_version = cache['plugin_version'] if 'plugin_version' in cache else None
-logging.info('cache file: %s' % cache_file)
-logging.debug('cache: %s' % str(cache))
+logging.info(f'cache file: {cache_file}')
+logging.debug(f'cache: {str(cache)}')
 
 # Function to compare version numbers
 def versiontuple(v):
@@ -78,20 +83,20 @@ def api_call(email):
     r = requests.get(API_URL,
                      auth=API_AUTH,
                      params={"address": email})
-    if r.status_code != requests.codes.ok :
-        logging.info("Error in the API call for %s. Status code: %s" % (email, r.status_code) )
-        return None
-    else:
+    if r.status_code == requests.codes.ok:
         return r.json()
+    logging.info(
+        f"Error in the API call for {email}. Status code: {r.status_code}"
+    )
+
+    return None
 
 # Email testing and writing results one by one
 
 writer = output.get_writer()
 
-i = 0
-for contact in contacts.iter_rows():
+for i, contact in enumerate(contacts.iter_rows(), start=1):
 
-    i += 1
     contact = dict(contact)
     email = contact[email_column]
 
@@ -106,17 +111,18 @@ for contact in contacts.iter_rows():
             if result is not None:
                 cache["emails"][email] = result
 
-        if result is not None and 'is_valid' in result:
-            contact['email_is_valid'] = result.get('is_valid')
-        else:
-            contact['email_is_valid'] = ''
+        contact['email_is_valid'] = (
+            result.get('is_valid')
+            if result is not None and 'is_valid' in result
+            else ''
+        )
 
         contact['email_mailgun_details'] = json.dumps(result)
 
     writer.write_row_dict(contact)
-    
 
-logging.debug('cache: %s' % str(cache))
+
+logging.debug(f'cache: {str(cache)}')
 
 writer.close()
 cache.close()
