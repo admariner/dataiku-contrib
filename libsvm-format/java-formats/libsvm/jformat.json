@@ -24,7 +24,7 @@
                 {
                     "value": "single_column_json",
                     "label": "Single-column (JSON)"
-                },
+                }
             ],
             "defaultValue": "multi_column"
         },
