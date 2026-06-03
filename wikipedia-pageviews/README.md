@@ -50,17 +50,6 @@ For each `(project, page)` pair, the recipe queries the Wikimedia API and writes
 - `date`
 - `views`
 
-## Requirements
-
-- internet access from the DSS instance to the Wikimedia Pageviews API
-- a DSS code environment able to run the Python dependencies declared by the plugin
-
-## Usage notes
-
-- Project identifiers must use the Wikimedia project format, for example `en.wikipedia` or `fr.wikipedia`.
-- The plugin uses the Wikimedia REST Pageviews API and therefore depends on the availability and behavior of that external service.
-- The plugin sends a dedicated `User-Agent` header when calling the API.
-
 ## License
 
 This plugin is distributed under the Apache Software License.
